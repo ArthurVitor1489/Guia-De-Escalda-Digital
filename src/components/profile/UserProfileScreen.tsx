@@ -50,6 +50,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
   onOpenAuthModal,
   onOpenPostPhoto,
   onOpenCreateCrag,
+  onLogout,
 }) => {
   const [activeTab, setActiveTab] = useState<'ascents' | 'photos' | 'crags'>('ascents');
 

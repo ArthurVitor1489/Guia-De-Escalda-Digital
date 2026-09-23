@@ -114,7 +114,9 @@ export const WallTopo2DViewer: React.FC<WallTopo2DViewerProps> = ({
             viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
           >
             {wall.routes.map(route => {
-              if (!route.geometry2D) return null;
+              if (!route.geometry2D || !Array.isArray(route.geometry2D.pathPoints) || route.geometry2D.pathPoints.length === 0) {
+                return null;
+              }
               const isSelected = route.id === selectedRouteId;
               const pathD = generateSvgPath(route.geometry2D.pathPoints);
               const routeColor = isSelected ? '#FFE600' : (route.geometry2D.color || '#38BDF8');
@@ -145,6 +147,7 @@ export const WallTopo2DViewer: React.FC<WallTopo2DViewerProps> = ({
 
                   {/* Chapeletas / Proteções */}
                   {showBolts &&
+                    Array.isArray(route.geometry2D.bolts) &&
                     route.geometry2D.bolts.map(bolt => (
                       <G key={`bolt-${bolt.index}`}>
                         <Circle
