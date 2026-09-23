@@ -7,7 +7,13 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  Modal,
+  TextInput,
+  Alert,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { UserProfile, AscentLog, CommunityPhoto, ClimbingDestination } from '../../types/climbing';
 import {
   Award,
@@ -27,9 +33,57 @@ import {
   LogOut,
   LogIn,
   User,
+  Upload,
+  Check,
+  X,
+  Link2,
 } from 'lucide-react-native';
 import { getGradeBadgeColor } from '../../services/gradeConverter';
-import { DEFAULT_USER } from '../../services/communityService';
+import { CommunityService, DEFAULT_USER } from '../../services/communityService';
+
+// Galeria de avatares de escaladores para troca rápida em 1 clique
+const CLIMBER_AVATAR_PRESETS = [
+  {
+    id: 'preset-1',
+    label: 'Clássico',
+    url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+  },
+  {
+    id: 'preset-2',
+    label: 'Granito PB',
+    url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+  },
+  {
+    id: 'preset-3',
+    label: 'Marinho',
+    url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
+  },
+  {
+    id: 'preset-4',
+    label: 'Alpinista',
+    url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80',
+  },
+  {
+    id: 'preset-5',
+    label: 'Crag Master',
+    url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80',
+  },
+  {
+    id: 'preset-6',
+    label: 'Boulder Pro',
+    url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80',
+  },
+  {
+    id: 'preset-7',
+    label: 'Aventureiro',
+    url: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=400&q=80',
+  },
+  {
+    id: 'preset-8',
+    label: 'Highlander',
+    url: 'https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?auto=format&fit=crop&w=400&q=80',
+  },
+];
 
 interface UserProfileScreenProps {
   user: UserProfile | null;
@@ -40,6 +94,7 @@ interface UserProfileScreenProps {
   onOpenPostPhoto: () => void;
   onOpenCreateCrag: () => void;
   onLogout?: () => void;
+  onUpdateUser?: (updatedUser: UserProfile) => void;
 }
 
 export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
@@ -51,13 +106,157 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
   onOpenPostPhoto,
   onOpenCreateCrag,
   onLogout,
+  onUpdateUser,
 }) => {
   const [activeTab, setActiveTab] = useState<'ascents' | 'photos' | 'crags'>('ascents');
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [tempAvatarUrl, setTempAvatarUrl] = useState('');
+  const [isSavingAvatar, setIsSavingAvatar] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const safeUser = user || DEFAULT_USER;
   const safeLogs = Array.isArray(logs) ? logs : [];
   const safePhotos = Array.isArray(communityPhotos) ? communityPhotos : [];
   const safeDestinations = Array.isArray(customDestinations) ? customDestinations : [];
+
+  // Abre modal de troca de foto com o avatar atual carregado
+  const handleOpenAvatarModal = () => {
+    setTempAvatarUrl(
+      safeUser.avatarUrl ||
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'
+    );
+    setShowAvatarModal(true);
+  };
+
+  // Upload de foto pela galeria / arquivos
+  const handlePickAvatar = async () => {
+    try {
+      setIsUploadingAvatar(true);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset.base64) {
+          setTempAvatarUrl(`data:image/jpeg;base64,${asset.base64}`);
+        } else {
+          setTempAvatarUrl(asset.uri);
+        }
+      }
+    } catch (err) {
+      console.warn('Erro ao selecionar foto de perfil, usando fallback web:', err);
+      triggerWebAvatarInput();
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  // Tirar foto com a câmera do celular
+  const handleTakeAvatarPhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        if (Platform.OS === 'web') {
+          window.alert('Permissão de câmera não concedida no navegador.');
+        } else {
+          Alert.alert('Permissão necessária', 'Permita o acesso à câmera para fotografar seu perfil.');
+        }
+        return;
+      }
+
+      setIsUploadingAvatar(true);
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset.base64) {
+          setTempAvatarUrl(`data:image/jpeg;base64,${asset.base64}`);
+        } else {
+          setTempAvatarUrl(asset.uri);
+        }
+      }
+    } catch (err) {
+      console.warn('Erro ao abrir câmera para foto de perfil:', err);
+      triggerWebAvatarInput();
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  // Fallback web para input de arquivo HTML
+  const triggerWebAvatarInput = () => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (e: any) => {
+        const file = e.target?.files?.[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            if (event.target?.result) {
+              setTempAvatarUrl(event.target.result as string);
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+      input.click();
+    }
+  };
+
+  // Salva a nova foto no perfil do usuário e sincroniza com a aplicação
+  const handleSaveAvatar = async () => {
+    if (!tempAvatarUrl || !tempAvatarUrl.trim()) {
+      if (Platform.OS === 'web') {
+        window.alert('Selecione uma imagem ou insira uma URL válida.');
+      } else {
+        Alert.alert('Atenção', 'Selecione uma imagem ou insira uma URL válida.');
+      }
+      return;
+    }
+
+    try {
+      setIsSavingAvatar(true);
+      const updatedUser: UserProfile = {
+        ...safeUser,
+        avatarUrl: tempAvatarUrl.trim(),
+      };
+
+      await CommunityService.updateProfile(updatedUser);
+
+      if (onUpdateUser) {
+        onUpdateUser(updatedUser);
+      }
+
+      setShowAvatarModal(false);
+
+      if (Platform.OS === 'web') {
+        window.alert('Foto de perfil atualizada com sucesso!');
+      } else {
+        Alert.alert('Sucesso', 'Sua foto de perfil foi atualizada com sucesso!');
+      }
+    } catch (err) {
+      console.warn('Erro ao salvar foto de perfil:', err);
+      if (Platform.OS === 'web') {
+        window.alert('Não foi possível salvar a nova foto de perfil.');
+      } else {
+        Alert.alert('Erro', 'Não foi possível salvar a nova foto de perfil.');
+      }
+    } finally {
+      setIsSavingAvatar(false);
+    }
+  };
 
   // Filtra fotos postadas pelo usuário atual
   const userPhotos = safePhotos.filter(p => p && p.userId === safeUser.id);
@@ -98,7 +297,14 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
       {/* Banner Superior & Header do Perfil */}
       <View style={styles.headerCard}>
         <View style={styles.headerTopRow}>
-          <View style={styles.avatarWrapper}>
+          {/* Avatar com badge de edição ao clicar */}
+          <TouchableOpacity
+            style={styles.avatarWrapper}
+            onPress={handleOpenAvatarModal}
+            activeOpacity={0.8}
+            accessibilityLabel="Trocar foto do perfil"
+            accessibilityRole="button"
+          >
             <Image
               source={{
                 uri:
@@ -107,12 +313,26 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
               }}
               style={styles.avatarImg}
             />
-            <View style={styles.verifiedBadge}>
-              <CheckCircle2 size={14} color="#FFFFFF" />
+            {/* Ícone de câmera para indicar edição da foto */}
+            <View style={styles.editAvatarBadge}>
+              <Camera size={13} color="#FFFFFF" />
             </View>
-          </View>
+            <View style={styles.verifiedBadge}>
+              <CheckCircle2 size={13} color="#FFFFFF" />
+            </View>
+          </TouchableOpacity>
 
           <View style={styles.headerActions}>
+            {/* Botão Dedicado: Trocar Foto */}
+            <TouchableOpacity
+              style={styles.changeAvatarBtn}
+              onPress={handleOpenAvatarModal}
+              activeOpacity={0.8}
+            >
+              <Camera size={14} color="#10B981" />
+              <Text style={styles.changeAvatarBtnText}>Trocar Foto</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity
               style={styles.switchUserBtn}
               onPress={onOpenAuthModal}
@@ -395,6 +615,161 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
         </View>
       )}
 
+      {/* Modal de Troca de Foto de Perfil */}
+      <Modal
+        visible={showAvatarModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAvatarModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.avatarModalContent}>
+            {/* Header do Modal */}
+            <View style={styles.avatarModalHeader}>
+              <View style={styles.avatarModalTitleBox}>
+                <Camera size={20} color="#10B981" />
+                <Text style={styles.avatarModalTitle}>Alterar Foto do Perfil</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowAvatarModal(false)}
+                style={styles.avatarModalCloseBtn}
+              >
+                <X size={18} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.avatarModalBody}>
+              {/* Preview do Avatar Selecionado */}
+              <View style={styles.avatarPreviewSection}>
+                <View style={styles.avatarPreviewRing}>
+                  <Image
+                    source={{
+                      uri:
+                        tempAvatarUrl ||
+                        safeUser.avatarUrl ||
+                        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+                    }}
+                    style={styles.avatarPreviewImg}
+                  />
+                  {isUploadingAvatar && (
+                    <View style={styles.avatarUploadingOverlay}>
+                      <ActivityIndicator size="small" color="#10B981" />
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.avatarPreviewHint}>
+                  Prévia da foto no seu perfil
+                </Text>
+              </View>
+
+              {/* Botões de Ação Rápida: Galeria e Câmera */}
+              <Text style={styles.avatarSectionLabel}>ESCOLHER DO DISPOSITIVO</Text>
+              <View style={styles.avatarPickerRow}>
+                <TouchableOpacity
+                  style={styles.avatarPickerBtn}
+                  onPress={handlePickAvatar}
+                  disabled={isUploadingAvatar}
+                  activeOpacity={0.8}
+                >
+                  <Upload size={16} color="#38BDF8" />
+                  <Text style={styles.avatarPickerBtnText}>Galeria / Arquivo</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.avatarPickerBtn}
+                  onPress={handleTakeAvatarPhoto}
+                  disabled={isUploadingAvatar}
+                  activeOpacity={0.8}
+                >
+                  <Camera size={16} color="#10B981" />
+                  <Text style={styles.avatarPickerBtnText}>Tirar Foto</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Input de URL Direta */}
+              <Text style={styles.avatarSectionLabel}>OU DIGITE A URL DA IMAGEM</Text>
+              <View style={styles.avatarInputWrapper}>
+                <Link2 size={16} color="#64748B" style={{ marginLeft: 10 }} />
+                <TextInput
+                  style={styles.avatarUrlInput}
+                  placeholder="https://exemplo.com/sua-foto.jpg"
+                  placeholderTextColor="#64748B"
+                  value={tempAvatarUrl}
+                  onChangeText={setTempAvatarUrl}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+
+              {/* Presets de Escaladores */}
+              <View style={styles.presetsHeaderRow}>
+                <Text style={styles.avatarSectionLabel}>OU ESCOLHA UM AVATAR DE ESCALADA</Text>
+                <Sparkles size={14} color="#F59E0B" />
+              </View>
+              <View style={styles.presetsGrid}>
+                {CLIMBER_AVATAR_PRESETS.map((preset) => {
+                  const isSelected = tempAvatarUrl === preset.url;
+                  return (
+                    <TouchableOpacity
+                      key={preset.id}
+                      style={[
+                        styles.presetItem,
+                        isSelected && styles.presetItemSelected,
+                      ]}
+                      onPress={() => setTempAvatarUrl(preset.url)}
+                      activeOpacity={0.8}
+                    >
+                      <Image source={{ uri: preset.url }} style={styles.presetImage} />
+                      {isSelected && (
+                        <View style={styles.presetCheckBadge}>
+                          <Check size={10} color="#FFF" />
+                        </View>
+                      )}
+                      <Text
+                        style={[
+                          styles.presetLabel,
+                          isSelected && styles.presetLabelSelected,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {preset.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
+            {/* Footer com Cancelar e Salvar */}
+            <View style={styles.avatarModalFooter}>
+              <TouchableOpacity
+                style={styles.avatarCancelBtn}
+                onPress={() => setShowAvatarModal(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.avatarCancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.avatarSaveBtn, isSavingAvatar && { opacity: 0.6 }]}
+                onPress={handleSaveAvatar}
+                disabled={isSavingAvatar}
+                activeOpacity={0.8}
+              >
+                {isSavingAvatar ? (
+                  <ActivityIndicator size="small" color="#0F172A" />
+                ) : (
+                  <Check size={16} color="#0F172A" />
+                )}
+                <Text style={styles.avatarSaveBtnText}>
+                  {isSavingAvatar ? 'Salvando...' : 'Salvar Foto'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <View style={{ height: 100 }} />
     </ScrollView>
   );
@@ -436,6 +811,35 @@ const styles = StyleSheet.create({
     padding: 2,
     borderWidth: 1.5,
     borderColor: '#0F172A',
+  },
+  editAvatarBadge: {
+    position: 'absolute',
+    bottom: -2,
+    left: -2,
+    backgroundColor: '#10B981',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#0F172A',
+  },
+  changeAvatarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#10B981',
+  },
+  changeAvatarBtnText: {
+    color: '#10B981',
+    fontSize: 12,
+    fontWeight: '700',
   },
   headerActions: {
     flexDirection: 'row',
@@ -864,5 +1268,225 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#94A3B8',
     lineHeight: 16,
+  },
+  // Modal de Troca de Foto
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  avatarModalContent: {
+    backgroundColor: '#0F172A',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#1E293B',
+    width: '100%',
+    maxWidth: 480,
+    maxHeight: '90%',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  avatarModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E293B',
+  },
+  avatarModalTitleBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  avatarModalTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  avatarModalCloseBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#1E293B',
+  },
+  avatarModalBody: {
+    padding: 18,
+  },
+  avatarPreviewSection: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  avatarPreviewRing: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 3,
+    borderColor: '#10B981',
+    overflow: 'hidden',
+    backgroundColor: '#1E293B',
+    marginBottom: 8,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarPreviewImg: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarUploadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarPreviewHint: {
+    color: '#94A3B8',
+    fontSize: 12,
+  },
+  avatarSectionLabel: {
+    color: '#94A3B8',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    marginTop: 14,
+    marginBottom: 8,
+  },
+  avatarPickerRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  avatarPickerBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#1E293B',
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  avatarPickerBtnText: {
+    color: '#F8FAFC',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  avatarInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E293B',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#334155',
+    overflow: 'hidden',
+  },
+  avatarUrlInput: {
+    flex: 1,
+    color: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    fontSize: 12,
+  },
+  presetsHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 14,
+    marginBottom: 8,
+  },
+  presetsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  presetItem: {
+    width: '23%',
+    alignItems: 'center',
+    padding: 6,
+    borderRadius: 10,
+    backgroundColor: '#1E293B',
+    borderWidth: 1.5,
+    borderColor: '#334155',
+    position: 'relative',
+  },
+  presetItemSelected: {
+    borderColor: '#10B981',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+  },
+  presetImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginBottom: 4,
+  },
+  presetCheckBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: '#10B981',
+    borderRadius: 8,
+    width: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  presetLabel: {
+    color: '#94A3B8',
+    fontSize: 9,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  presetLabelSelected: {
+    color: '#10B981',
+    fontWeight: '800',
+  },
+  avatarModalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#1E293B',
+    backgroundColor: '#0B1120',
+  },
+  avatarCancelBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: '#334155',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarCancelBtnText: {
+    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  avatarSaveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+    backgroundColor: '#10B981',
+    justifyContent: 'center',
+  },
+  avatarSaveBtnText: {
+    color: '#0F172A',
+    fontSize: 13,
+    fontWeight: '800',
   },
 });

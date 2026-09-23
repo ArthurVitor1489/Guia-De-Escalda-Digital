@@ -337,6 +337,7 @@ export default function App() {
           onOpenPostPhoto={() => handleOpenPostPhoto()}
           onOpenCreateCrag={handleOpenCreateCrag}
           onLogout={handleLogout}
+          onUpdateUser={(updated) => setCurrentUser(updated)}
         />
       ) : (
         <ScrollView style={styles.scrollBody} showsVerticalScrollIndicator={false}>
