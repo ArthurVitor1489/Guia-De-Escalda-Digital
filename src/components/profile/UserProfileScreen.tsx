@@ -26,6 +26,7 @@ import {
   Mountain,
 } from 'lucide-react-native';
 import { getGradeBadgeColor } from '../../services/gradeConverter';
+import { DEFAULT_USER } from '../../services/communityService';
 
 interface UserProfileScreenProps {
   user: UserProfile;
@@ -48,13 +49,18 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'ascents' | 'photos' | 'crags'>('ascents');
 
+  const safeUser = user || DEFAULT_USER;
+  const safeLogs = Array.isArray(logs) ? logs : [];
+  const safePhotos = Array.isArray(communityPhotos) ? communityPhotos : [];
+  const safeDestinations = Array.isArray(customDestinations) ? customDestinations : [];
+
   // Filtra fotos postadas pelo usuário atual
-  const userPhotos = communityPhotos.filter(p => p.userId === user.id);
+  const userPhotos = safePhotos.filter(p => p && p.userId === safeUser.id);
 
   // Calcula estatísticas
-  const onsightCount = logs.filter(l => l.style === 'onsight').length;
-  const flashCount = logs.filter(l => l.style === 'flash').length;
-  const redpointCount = logs.filter(l => l.style === 'redpoint').length;
+  const onsightCount = safeLogs.filter(l => l && l.style === 'onsight').length;
+  const flashCount = safeLogs.filter(l => l && l.style === 'flash').length;
+  const redpointCount = safeLogs.filter(l => l && l.style === 'redpoint').length;
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -62,7 +68,14 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
       <View style={styles.headerCard}>
         <View style={styles.headerTopRow}>
           <View style={styles.avatarWrapper}>
-            <Image source={{ uri: user.avatarUrl }} style={styles.avatarImg} />
+            <Image
+              source={{
+                uri:
+                  safeUser.avatarUrl ||
+                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+              }}
+              style={styles.avatarImg}
+            />
             <View style={styles.verifiedBadge}>
               <CheckCircle2 size={14} color="#FFFFFF" />
             </View>
@@ -80,23 +93,25 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
           </View>
         </View>
 
-        <Text style={styles.userName}>{user.name}</Text>
-        <Text style={styles.userHandle}>@{user.username}</Text>
+        <Text style={styles.userName}>{safeUser.name || 'Escalador'}</Text>
+        <Text style={styles.userHandle}>@{safeUser.username || 'escalador'}</Text>
 
         <View style={styles.metaRow}>
           <View style={styles.metaItem}>
             <MapPin size={13} color="#38BDF8" />
-            <Text style={styles.metaText}>{user.city}, {user.state}</Text>
+            <Text style={styles.metaText}>
+              {safeUser.city || 'Campina Grande'}, {safeUser.state || 'PB'}
+            </Text>
           </View>
           <Text style={styles.metaDot}>•</Text>
           <View style={styles.metaItem}>
             <Calendar size={13} color="#94A3B8" />
-            <Text style={styles.metaText}>No CRUX desde {user.memberSince}</Text>
+            <Text style={styles.metaText}>No CRUX desde {safeUser.memberSince || '2023'}</Text>
           </View>
         </View>
 
-        {user.bio ? (
-          <Text style={styles.bioText}>{user.bio}</Text>
+        {safeUser.bio ? (
+          <Text style={styles.bioText}>{safeUser.bio}</Text>
         ) : null}
 
         {/* Destaque de Maior Grau */}
@@ -104,7 +119,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
           <Flame size={18} color="#F59E0B" />
           <View style={styles.hardestGradeInfo}>
             <Text style={styles.hardestGradeLabel}>CADENA MAIS DURA</Text>
-            <Text style={styles.hardestGradeValue}>{user.hardestGrade || '7a'}</Text>
+            <Text style={styles.hardestGradeValue}>{safeUser.hardestGrade || '7a'}</Text>
           </View>
           <View style={styles.hardestGradeTag}>
             <Text style={styles.hardestGradeTagText}>ESPORTIVA</Text>
@@ -114,7 +129,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
         {/* Grid de Estatísticas Gerais */}
         <View style={styles.statsGrid}>
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>{logs.length}</Text>
+            <Text style={styles.statValue}>{safeLogs.length}</Text>
             <Text style={styles.statLabel}>Cadenas</Text>
           </View>
           <View style={styles.statBox}>
@@ -122,7 +137,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
             <Text style={styles.statLabel}>Fotos</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>{customDestinations.length}</Text>
+            <Text style={styles.statValue}>{safeDestinations.length}</Text>
             <Text style={styles.statLabel}>Pedras</Text>
           </View>
           <View style={styles.statBox}>
@@ -140,7 +155,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
         >
           <Award size={16} color={activeTab === 'ascents' ? '#10B981' : '#64748B'} />
           <Text style={[styles.tabButtonText, activeTab === 'ascents' && styles.tabButtonTextActive]}>
-            Cadenas ({logs.length})
+            Cadenas ({safeLogs.length})
           </Text>
         </TouchableOpacity>
 
@@ -160,7 +175,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
         >
           <Mountain size={16} color={activeTab === 'crags' ? '#F59E0B' : '#64748B'} />
           <Text style={[styles.tabButtonText, activeTab === 'crags' && styles.tabButtonTextActive]}>
-            Pedras ({customDestinations.length})
+            Pedras ({safeDestinations.length})
           </Text>
         </TouchableOpacity>
       </View>
@@ -168,7 +183,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
       {/* Conteúdo da Aba 1: Cadenas & Diário */}
       {activeTab === 'ascents' && (
         <View style={styles.sectionContainer}>
-          {logs.length === 0 ? (
+          {safeLogs.length === 0 ? (
             <View style={styles.emptyState}>
               <Award size={40} color="#334155" />
               <Text style={styles.emptyStateTitle}>Nenhuma cadena registrada</Text>
@@ -178,8 +193,13 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
             </View>
           ) : (
             <View style={styles.ascentsList}>
-              {logs.map((log) => {
-                const gradeColor = getGradeBadgeColor(log.routeGrade);
+              {safeLogs.map((log) => {
+                const gradeStr = log.gradeStr || (log as any).routeGrade || '5º';
+                const gradeColor = getGradeBadgeColor(gradeStr);
+                const ratingStars = log.ratingStars || (log as any).rating || 5;
+                const notes = log.personalNotes || (log as any).notes || '';
+                const styleKey = log.style || 'redpoint';
+
                 return (
                   <View key={log.id} style={styles.ascentCard}>
                     <View style={styles.ascentHeader}>
@@ -190,7 +210,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
                         </Text>
                       </View>
                       <View style={[styles.ascentGradeBadge, { backgroundColor: gradeColor }]}>
-                        <Text style={styles.ascentGradeText}>{log.routeGrade}</Text>
+                        <Text style={styles.ascentGradeText}>{gradeStr}</Text>
                       </View>
                     </View>
 
@@ -198,14 +218,14 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
                       <View
                         style={[
                           styles.stylePill,
-                          log.style === 'onsight'
+                          styleKey === 'onsight'
                             ? styles.styleOnsight
-                            : log.style === 'flash'
+                            : styleKey === 'flash'
                             ? styles.styleFlash
                             : styles.styleRedpoint,
                         ]}
                       >
-                        <Text style={styles.stylePillText}>{log.style.toUpperCase()}</Text>
+                        <Text style={styles.stylePillText}>{styleKey.toUpperCase()}</Text>
                       </View>
 
                       <View style={styles.starsRow}>
@@ -213,8 +233,8 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
                           <Star
                             key={s}
                             size={12}
-                            color={s <= log.rating ? '#F59E0B' : '#334155'}
-                            fill={s <= log.rating ? '#F59E0B' : 'transparent'}
+                            color={s <= ratingStars ? '#F59E0B' : '#334155'}
+                            fill={s <= ratingStars ? '#F59E0B' : 'transparent'}
                           />
                         ))}
                       </View>
@@ -222,8 +242,8 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
                       <Text style={styles.ascentDate}>{log.date}</Text>
                     </View>
 
-                    {log.notes ? (
-                      <Text style={styles.ascentNotes}>"{log.notes}"</Text>
+                    {notes ? (
+                      <Text style={styles.ascentNotes}>"{notes}"</Text>
                     ) : null}
 
                     {log.partner ? (
@@ -261,7 +281,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
             <View style={styles.photosGrid}>
               {userPhotos.map((photo) => (
                 <View key={photo.id} style={styles.photoCard}>
-                  <Image source={{ uri: photo.photoUrl }} style={styles.photoCardImg} />
+                  <Image source={{ uri: photo.photoUrl }} style={styles.photoCardImg} resizeMode="cover" />
                   <View style={styles.photoCardOverlay}>
                     {photo.routeName && (
                       <View style={styles.photoRouteTag}>
@@ -269,11 +289,11 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
                       </View>
                     )}
                     <Text style={styles.photoCaption} numberOfLines={2}>
-                      {photo.caption}
+                      {photo.caption || 'Foto da via'}
                     </Text>
                     <View style={styles.photoCardBottom}>
                       <Text style={styles.photoDate}>{photo.date}</Text>
-                      <Text style={styles.photoLikes}>❤️ {photo.likesCount}</Text>
+                      <Text style={styles.photoLikes}>❤️ {photo.likesCount || 0}</Text>
                     </View>
                   </View>
                 </View>
@@ -295,7 +315,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
             <Text style={styles.addPhotoBannerText}>+ REGISTRAR NOVA PEDRA EM CAMPO</Text>
           </TouchableOpacity>
 
-          {customDestinations.length === 0 ? (
+          {safeDestinations.length === 0 ? (
             <View style={styles.emptyState}>
               <Compass size={40} color="#334155" />
               <Text style={styles.emptyStateTitle}>Nenhuma pedra cadastrada por você</Text>
@@ -305,24 +325,29 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
             </View>
           ) : (
             <View style={styles.cragsList}>
-              {customDestinations.map((dest) => (
-                <View key={dest.id} style={styles.customCragCard}>
-                  <View style={styles.customCragHeader}>
-                    <View>
-                      <Text style={styles.customCragName}>{dest.name}</Text>
-                      <Text style={styles.customCragLocation}>
-                        {dest.city}, {dest.state} • {dest.totalRoutesCount} vias
-                      </Text>
+              {safeDestinations.map((dest) => {
+                const cityName = dest.sectors?.[0]?.city || (dest as any).city || 'Paraíba';
+                const routesCount = dest.totalRoutes || (dest as any).totalRoutesCount || 0;
+
+                return (
+                  <View key={dest.id} style={styles.customCragCard}>
+                    <View style={styles.customCragHeader}>
+                      <View>
+                        <Text style={styles.customCragName}>{dest.name}</Text>
+                        <Text style={styles.customCragLocation}>
+                          {cityName}, {dest.state} • {routesCount} vias
+                        </Text>
+                      </View>
+                      <View style={styles.customCragBadge}>
+                        <Text style={styles.customCragBadgeText}>NOVO</Text>
+                      </View>
                     </View>
-                    <View style={styles.customCragBadge}>
-                      <Text style={styles.customCragBadgeText}>NOVO</Text>
-                    </View>
+                    <Text style={styles.customCragDesc} numberOfLines={2}>
+                      {dest.description}
+                    </Text>
                   </View>
-                  <Text style={styles.customCragDesc} numberOfLines={2}>
-                    {dest.description}
-                  </Text>
-                </View>
-              ))}
+                );
+              })}
             </View>
           )}
         </View>

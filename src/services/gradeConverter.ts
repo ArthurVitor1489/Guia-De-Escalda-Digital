@@ -78,13 +78,15 @@ export function formatRouteGrade(route: Route, preferred: 'brazilian' | 'french'
 }
 
 /**
- * Retorna a cor correspondente à dificuldade da via
+ * Retorna a cor correspondente à dificuldade da via (à prova de falhas)
  */
-export function getGradeBadgeColor(gradeStr: string): string {
+export function getGradeBadgeColor(gradeStr?: string | null): string {
+  if (!gradeStr || typeof gradeStr !== 'string') return '#6B7280';
+  const cleanGrade = gradeStr.trim().toLowerCase();
   const match = GRADE_TABLE.find(
-    g => g.brazilian.toLowerCase() === gradeStr.toLowerCase() ||
-         g.french.toLowerCase() === gradeStr.toLowerCase() ||
-         g.yds.toLowerCase() === gradeStr.toLowerCase()
+    g => (g.brazilian && g.brazilian.toLowerCase() === cleanGrade) ||
+         (g.french && g.french.toLowerCase() === cleanGrade) ||
+         (g.yds && g.yds.toLowerCase() === cleanGrade)
   );
   return match ? match.color : '#6B7280';
 }
