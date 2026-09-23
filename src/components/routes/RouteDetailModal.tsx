@@ -222,7 +222,7 @@ export const RouteDetailModal: React.FC<RouteDetailModalProps> = ({
                     activeOpacity={0.8}
                   >
                     <Camera size={13} color="#10B981" />
-                    <Text style={styles.postPhotoMiniText}>+ Postar</Text>
+                    <Text style={styles.postPhotoMiniText}>Postar</Text>
                   </TouchableOpacity>
                 )}
               </View>

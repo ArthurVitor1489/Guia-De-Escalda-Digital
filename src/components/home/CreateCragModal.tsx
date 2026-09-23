@@ -405,7 +405,7 @@ export const CreateCragModal: React.FC<CreateCragModalProps> = ({
                     activeOpacity={0.7}
                   >
                     <Plus size={12} color="#10B981" />
-                    <Text style={styles.newCityMiniBtnText}>+ Nova Cidade</Text>
+                    <Text style={styles.newCityMiniBtnText}>Nova Cidade</Text>
                   </TouchableOpacity>
                 )}
               </View>

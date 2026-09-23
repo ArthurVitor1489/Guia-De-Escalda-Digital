@@ -308,7 +308,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
             activeOpacity={0.8}
           >
             <ImagePlus size={18} color="#0F172A" />
-            <Text style={styles.addPhotoBannerText}>+ POSTAR NOVA FOTO / BETA</Text>
+            <Text style={styles.addPhotoBannerText}>POSTAR NOVA FOTO / BETA</Text>
           </TouchableOpacity>
 
           {userPhotos.length === 0 ? (
@@ -354,7 +354,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
             activeOpacity={0.8}
           >
             <Plus size={18} color="#0F172A" />
-            <Text style={styles.addPhotoBannerText}>+ REGISTRAR NOVA PEDRA EM CAMPO</Text>
+            <Text style={styles.addPhotoBannerText}>REGISTRAR NOVA PEDRA EM CAMPO</Text>
           </TouchableOpacity>
 
           {safeDestinations.length === 0 ? (

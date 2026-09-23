@@ -431,7 +431,7 @@ export default function App() {
               activeOpacity={0.8}
             >
               <Plus size={14} color="#10B981" />
-              <Text style={styles.addSectorTabBtnText}>+ Nova Pedra</Text>
+              <Text style={styles.addSectorTabBtnText}>Nova Pedra</Text>
             </TouchableOpacity>
           </ScrollView>
 
@@ -450,7 +450,7 @@ export default function App() {
               activeOpacity={0.8}
             >
               <Plus size={14} color="#0F172A" />
-              <Text style={styles.createRouteBtnText}>+ VIA / BOULDER</Text>
+              <Text style={styles.createRouteBtnText}>VIA / BOULDER</Text>
             </TouchableOpacity>
           </View>
 
