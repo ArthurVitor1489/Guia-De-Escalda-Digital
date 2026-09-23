@@ -8,12 +8,11 @@ import {
   StatusBar,
   ScrollView,
   TouchableOpacity,
-  TextInput,
-  Platform,
 } from 'react-native';
-import { Sector, Wall, Route, AscentLog } from './src/types/climbing';
-import { MOCK_SECTORS } from './src/services/mockData';
+import { Sector, Wall, Route, AscentLog, ClimbingDestination } from './src/types/climbing';
+import { MOCK_SECTORS, CLIMBING_DESTINATIONS } from './src/services/mockData';
 import { StorageService } from './src/services/storageService';
+import { HomeScreen } from './src/components/home/HomeScreen';
 import { WallVisualContainer } from './src/components/wall/WallVisualContainer';
 import { RouteDetailModal } from './src/components/routes/RouteDetailModal';
 import { LogAscentModal } from './src/components/logbook/LogAscentModal';
@@ -23,28 +22,27 @@ import {
   Mountain,
   Compass,
   Award,
-  Search,
   MapPin,
   WifiOff,
-  SlidersHorizontal,
-  ChevronDown,
-  Layers,
-  Box,
-  Camera,
+  ArrowLeft,
+  Map,
 } from 'lucide-react-native';
 
 export default function App() {
-  const [sectors, setSectors] = useState<Sector[]>(MOCK_SECTORS);
+  const [destinations] = useState<ClimbingDestination[]>(CLIMBING_DESTINATIONS);
+  const [selectedDestination, setSelectedDestination] = useState<ClimbingDestination>(CLIMBING_DESTINATIONS[0]);
   const [activeSectorIndex, setActiveSectorIndex] = useState(0);
   const [activeWallIndex, setActiveWallIndex] = useState(0);
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [logbookRoute, setLogbookRoute] = useState<Route | null>(null);
   const [showApproachModal, setShowApproachModal] = useState(false);
-  const [currentTab, setCurrentTab] = useState<'guide' | 'logbook'>('guide');
+  const [currentTab, setCurrentTab] = useState<'home' | 'guide' | 'logbook'>('home');
   const [gradeSystem, setGradeSystem] = useState<'brazilian' | 'french' | 'yds'>('brazilian');
   const [logs, setLogs] = useState<AscentLog[]>([]);
 
-  const currentSector = sectors[activeSectorIndex] || sectors[0];
+  // Setores do destino atualmente selecionado
+  const currentSectors = selectedDestination.sectors || MOCK_SECTORS;
+  const currentSector = currentSectors[activeSectorIndex] || currentSectors[0];
   const currentWall = currentSector.walls[activeWallIndex] || currentSector.walls[0];
 
   // Carrega preferências e diário de escalada ao iniciar
@@ -77,20 +75,33 @@ export default function App() {
     setLogs(prev => [newLog, ...prev]);
   };
 
+  // Seleciona um destino a partir da Tela Inicial
+  const handleSelectDestination = (dest: ClimbingDestination) => {
+    setSelectedDestination(dest);
+    setActiveSectorIndex(0);
+    setActiveWallIndex(0);
+    setSelectedRoute(null);
+    setCurrentTab('guide');
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
 
       {/* Barra de Navegação Superior */}
       <View style={styles.topNavbar}>
-        <View style={styles.brandRow}>
+        <TouchableOpacity
+          style={styles.brandRow}
+          onPress={() => setCurrentTab('home')}
+          activeOpacity={0.7}
+        >
           <Mountain size={22} color="#10B981" />
           <Text style={styles.brandTitle}>CRUX</Text>
           <View style={styles.offlinePill}>
             <WifiOff size={10} color="#10B981" />
             <Text style={styles.offlineText}>OFFLINE</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
         <View style={styles.topActions}>
           {/* Seletor de Graduação */}
@@ -108,7 +119,7 @@ export default function App() {
           {/* Botão de Diário de Cadenas com Badge */}
           <TouchableOpacity
             style={[styles.navIconBtn, currentTab === 'logbook' && styles.navIconBtnActive]}
-            onPress={() => setCurrentTab(currentTab === 'guide' ? 'logbook' : 'guide')}
+            onPress={() => setCurrentTab(currentTab === 'logbook' ? 'home' : 'logbook')}
           >
             <Award size={18} color={currentTab === 'logbook' ? '#10B981' : '#E2E8F0'} />
             {logs.length > 0 && (
@@ -120,18 +131,35 @@ export default function App() {
         </View>
       </View>
 
-      {/* Conteúdo Principal: Guia ou Logbook */}
-      {currentTab === 'logbook' ? (
-        <LogbookScreen logs={logs} onClose={() => setCurrentTab('guide')} />
+      {/* Conteúdo Principal: Home, Guia da Falésia ou Logbook */}
+      {currentTab === 'home' ? (
+        <HomeScreen
+          destinations={destinations}
+          onSelectDestination={handleSelectDestination}
+        />
+      ) : currentTab === 'logbook' ? (
+        <LogbookScreen logs={logs} onClose={() => setCurrentTab('home')} />
       ) : (
         <ScrollView style={styles.scrollBody} showsVerticalScrollIndicator={false}>
-          {/* Seletor de Setores e Falésias */}
+          {/* Botão Voltar para Seleção de Cidades / Destinos */}
+          <TouchableOpacity
+            style={styles.backToHomeBtn}
+            onPress={() => setCurrentTab('home')}
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={16} color="#38BDF8" />
+            <Text style={styles.backToHomeText}>
+              Ver outras cidades / destinos ({selectedDestination.name}, {selectedDestination.state})
+            </Text>
+          </TouchableOpacity>
+
+          {/* Seletor do Setor Atual */}
           <View style={styles.sectorBar}>
             <View style={styles.sectorInfo}>
               <View style={styles.sectorBreadcrumb}>
                 <MapPin size={13} color="#38BDF8" />
                 <Text style={styles.sectorLocation}>
-                  {currentSector.cragName} • {currentSector.city}/{currentSector.state}
+                  {selectedDestination.name} ({selectedDestination.state}) • {currentSector.cragName}
                 </Text>
               </View>
               <Text style={styles.sectorNameText}>{currentSector.name}</Text>
@@ -146,13 +174,13 @@ export default function App() {
             </TouchableOpacity>
           </View>
 
-          {/* Carrossel de Alternância de Setores e Paredes Demonstrativas */}
+          {/* Carrossel de Alternância de Setores do Polo */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.sectorTabsScroll}
           >
-            {sectors.map((sec, sIdx) => {
+            {currentSectors.map((sec, sIdx) => {
               const isSecSelected = sIdx === activeSectorIndex;
               const has3D = sec.walls.some(w => !!w.model3D);
               const has2D = sec.walls.some(w => !!w.activeTopo2D);
@@ -190,13 +218,15 @@ export default function App() {
                   >
                     {sec.name}
                   </Text>
-                  <Text style={styles.sectorTabSub}>{sec.walls[0]?.routes.length || 0} vias</Text>
+                  <Text style={styles.sectorTabSub}>
+                    {sec.walls[0]?.routes.length || 0} vias cadastradas
+                  </Text>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
 
-          {/* Componente Central da Parede (Orquestrador com Fallback 3D -> 2D -> Foto) */}
+          {/* Componente Central da Parede (Orquestrador 3D -> 2D -> Foto) */}
           <WallVisualContainer
             wall={currentWall}
             selectedRouteId={selectedRoute?.id || null}
@@ -206,7 +236,40 @@ export default function App() {
         </ScrollView>
       )}
 
-      {/* Modal de Detalhes da Via */}
+      {/* Barra de Navegação Inferior Fixa */}
+      <View style={styles.bottomBar}>
+        <TouchableOpacity
+          style={[styles.bottomBarItem, currentTab === 'home' && styles.bottomBarItemActive]}
+          onPress={() => setCurrentTab('home')}
+        >
+          <Map size={20} color={currentTab === 'home' ? '#38BDF8' : '#64748B'} />
+          <Text style={[styles.bottomBarText, currentTab === 'home' && styles.bottomBarTextActive]}>
+            Destinos
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.bottomBarItem, currentTab === 'guide' && styles.bottomBarItemActive]}
+          onPress={() => setCurrentTab('guide')}
+        >
+          <Mountain size={20} color={currentTab === 'guide' ? '#10B981' : '#64748B'} />
+          <Text style={[styles.bottomBarText, currentTab === 'guide' && styles.bottomBarTextActive]}>
+            Guia da Parede
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.bottomBarItem, currentTab === 'logbook' && styles.bottomBarItemActive]}
+          onPress={() => setCurrentTab('logbook')}
+        >
+          <Award size={20} color={currentTab === 'logbook' ? '#F59E0B' : '#64748B'} />
+          <Text style={[styles.bottomBarText, currentTab === 'logbook' && styles.bottomBarTextActive]}>
+            Meu Diário
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Modais de Interação */}
       <RouteDetailModal
         route={selectedRoute}
         onClose={() => setSelectedRoute(null)}
@@ -214,7 +277,6 @@ export default function App() {
         preferredGradeSystem={gradeSystem}
       />
 
-      {/* Modal de Registro de Cadena */}
       <LogAscentModal
         route={logbookRoute}
         wall={currentWall}
@@ -224,7 +286,6 @@ export default function App() {
         onSaveAscent={handleSaveAscent}
       />
 
-      {/* Modal de Trilha, Acesso e Coordenadas GPS */}
       <SectorApproachModal
         sector={currentSector}
         visible={showApproachModal}
@@ -333,6 +394,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
   },
+  backToHomeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  backToHomeText: {
+    color: '#38BDF8',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   sectorBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -417,5 +496,31 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontSize: 11,
     marginTop: 2,
+  },
+  bottomBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: '#0F172A',
+    paddingVertical: 8,
+    paddingBottom: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#1E293B',
+  },
+  bottomBarItem: {
+    alignItems: 'center',
+    gap: 3,
+    paddingVertical: 4,
+    paddingHorizontal: 16,
+  },
+  bottomBarItemActive: {},
+  bottomBarText: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  bottomBarTextActive: {
+    color: '#F8FAFC',
+    fontWeight: '700',
   },
 });

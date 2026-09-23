@@ -1,5 +1,5 @@
 // Dados Reais de Escalada — Algodão de Jandaíra (PB) & Falésias Brasileiras
-import { Sector } from '../types/climbing';
+import { Sector, ClimbingDestination } from '../types/climbing';
 
 export const MOCK_SECTORS: Sector[] = [
   // SETOR 1: ALGODÃO DE JANDAÍRA - PARAÍBA (XII EENe 2013)
@@ -642,3 +642,387 @@ export const INITIAL_LOGBOOK_ENTRIES = [
     partner: 'Wolgrand Falcão',
   }
 ];
+
+// LISTA DE POLOS / DESTINOS DE ESCALADA PARA A TELA INICIAL
+export const CLIMBING_DESTINATIONS: ClimbingDestination[] = [
+  {
+    id: 'dest-algodao-jandaira',
+    name: 'Algodão de Jandaíra',
+    state: 'PB',
+    regionName: 'Curimataú Ocidental',
+    coverImage: 'https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=1200&q=80',
+    description: 'Sede histórica do XII EENe 2013. O paraíso do granito claro no Nordeste, com paredes de até 70m, fendas clássicas em móvel e tetos negativos como a mítica Pedra Furada.',
+    rockType: 'Granito Claro',
+    totalRoutes: 90,
+    totalSectors: 6,
+    has3D: true,
+    hasTrad: true,
+    hasSport: true,
+    hasBoulder: true,
+    distanceFromCapital: '200 km de João Pessoa • 70 km de Campina Grande • 14 km de Remígio',
+    highlights: ['Pedra Furada (3D & Teto Negativo)', 'Pedra do Caboclo (Paredão 70m)', 'Setor Mirante (Móvel Clássico)', 'Setor Climatizado'],
+    sectors: [MOCK_SECTORS[0]],
+  },
+  {
+    id: 'dest-campina-grande',
+    name: 'Campina Grande',
+    state: 'PB',
+    regionName: 'Agreste Paraibano',
+    coverImage: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80',
+    description: 'Um dos grandes berços da escalada paraibana. Destaque para a famosa Pedra do Marinho e o Parque do Poeta, com vias esportivas técnicas em placas de granito e blocos de boulder.',
+    rockType: 'Granito & Gnaisse',
+    totalRoutes: 45,
+    totalSectors: 3,
+    has3D: false,
+    hasTrad: true,
+    hasSport: true,
+    hasBoulder: true,
+    distanceFromCapital: '130 km de João Pessoa',
+    highlights: ['Pedra do Marinho', 'Parque do Poeta', 'Boulders de Bodocongó'],
+    sectors: [
+      {
+        id: 'sector-cg-marinho',
+        name: 'Pedra do Marinho',
+        cragName: 'Polo de Campina Grande',
+        region: 'Agreste Paraibano',
+        city: 'Campina Grande',
+        state: 'PB',
+        coordinates: { latitude: -7.2307, longitude: -35.8811 },
+        elevationMeters: 550,
+        approachTimeMinutes: 15,
+        approachTrailDescription: 'Acesso fácil por estrada asfaltada e trilha curta sinalizada até a base das placas de granito.',
+        accessStatus: 'aberto',
+        walls: [
+          {
+            id: 'wall-cg-marinho-leste',
+            sectorId: 'sector-cg-marinho',
+            name: 'Placa Principal do Marinho',
+            orientation: 'L',
+            sunShadeNotes: 'Sol pela manhã, sombra a partir das 12h.',
+            sunExposure: { morning: 'sol', afternoon: 'sombra' },
+            heightMeters: 22,
+            rockType: 'granito',
+            approachNotes: 'Base ampla com sombra de árvores.',
+            fallbackPhotoUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80',
+            photos: [{ id: 'p-cg', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80', isMain: true }],
+            routes: [
+              {
+                id: 'route-cg-1',
+                wallId: 'wall-cg-marinho-leste',
+                orderIndex: 1,
+                name: 'Vento Nordestino',
+                grade: { brazilian: '6º', french: '6a', yds: '5.10a', danger: 'E1' },
+                heightMeters: 20,
+                pitchesCount: 1,
+                boltsCount: 7,
+                protectionType: 'chapeleta',
+                anchorType: 'dupla_com_anel',
+                style: 'esportiva',
+                description: 'Linha técnica de equilíbrio e boa leitura de pés em granito aderente.',
+              },
+              {
+                id: 'route-cg-2',
+                wallId: 'wall-cg-marinho-leste',
+                orderIndex: 2,
+                name: 'Asa Branca',
+                grade: { brazilian: '7a', french: '6b', yds: '5.10c', danger: 'E1' },
+                heightMeters: 22,
+                pitchesCount: 1,
+                boltsCount: 9,
+                protectionType: 'chapeleta',
+                anchorType: 'corrente',
+                style: 'esportiva',
+                description: 'Passagem fina no terço médio sobre regletes horizontais pequenos.',
+              }
+            ]
+          }
+        ]
+      }
+    ],
+  },
+  {
+    id: 'dest-sousa',
+    name: 'Sousa',
+    state: 'PB',
+    regionName: 'Alto Sertão Paraibano',
+    coverImage: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
+    description: 'Terra dos Dinossauros e dos inselbergues do Sertão. Paredes com excelente potencial para vias tradicionais e esportivas em rocha esculpida pelo vento semiárido.',
+    rockType: 'Arenito & Granito',
+    totalRoutes: 25,
+    totalSectors: 2,
+    has3D: false,
+    hasTrad: true,
+    hasSport: true,
+    hasBoulder: false,
+    distanceFromCapital: '430 km de João Pessoa • 310 km de Campina Grande',
+    highlights: ['Inselbergues do Sertão', 'Serrote do Feiticeiro', 'Placas do Vale dos Dinossauros'],
+    sectors: [
+      {
+        id: 'sector-sousa-sertao',
+        name: 'Serrote do Feiticeiro',
+        cragName: 'Polo do Alto Sertão',
+        region: 'Alto Sertão Paraibano',
+        city: 'Sousa',
+        state: 'PB',
+        coordinates: { latitude: -6.7608, longitude: -38.2325 },
+        elevationMeters: 410,
+        approachTimeMinutes: 20,
+        approachTrailDescription: 'Caminhada na caatinga a partir da estrada vicinal do Vale dos Dinossauros.',
+        accessStatus: 'aberto',
+        walls: [
+          {
+            id: 'wall-sousa-feiticeiro',
+            sectorId: 'sector-sousa-sertao',
+            name: 'Paredão do Sertão',
+            orientation: 'E',
+            sunShadeNotes: 'Sol pela manhã bem cedo. Sombra garantida a partir das 11h.',
+            sunExposure: { morning: 'sol', afternoon: 'sombra' },
+            heightMeters: 30,
+            rockType: 'granito',
+            approachNotes: 'Base plana cercada por cactos e vegetação típica.',
+            fallbackPhotoUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
+            photos: [{ id: 'p-sousa', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80', isMain: true }],
+            routes: [
+              {
+                id: 'route-sousa-1',
+                wallId: 'wall-sousa-feiticeiro',
+                orderIndex: 1,
+                name: 'Pegada de T-Rex',
+                grade: { brazilian: '6º sup', french: '6a+', yds: '5.10b', danger: 'E1' },
+                heightMeters: 25,
+                pitchesCount: 1,
+                boltsCount: 8,
+                protectionType: 'chapeleta',
+                anchorType: 'dupla_com_anel',
+                style: 'esportiva',
+                description: 'Início em buracos cavados generosos, culminando numa fenda diagonal sólida.',
+              },
+              {
+                id: 'route-sousa-2',
+                wallId: 'wall-sousa-feiticeiro',
+                orderIndex: 2,
+                name: 'Calor do Sertão',
+                grade: { brazilian: '7b', french: '6b+', yds: '5.10d', danger: 'E2' },
+                heightMeters: 28,
+                pitchesCount: 1,
+                boltsCount: 10,
+                protectionType: 'chapeleta',
+                anchorType: 'corrente',
+                style: 'esportiva',
+                description: 'Via exigente de resistência em placa vertical contínua.',
+              }
+            ]
+          }
+        ]
+      }
+    ],
+  },
+  {
+    id: 'dest-araruna',
+    name: 'Araruna (Pedra da Boca)',
+    state: 'PB',
+    regionName: 'Curimataú / Agreste',
+    coverImage: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1200&q=80',
+    description: 'O Parque Estadual da Pedra da Boca é um dos maiores monumentos de escalada do Brasil. Paredões vertiginosos de até 250 metros em granito liso, chaminés e tetos gigantes.',
+    rockType: 'Granito & Gnaisse',
+    totalRoutes: 80,
+    totalSectors: 5,
+    has3D: false,
+    hasTrad: true,
+    hasSport: true,
+    hasBoulder: true,
+    distanceFromCapital: '165 km de João Pessoa • 95 km de Algodão de Jandaíra',
+    highlights: ['Pedra da Boca (Grande Maciço)', 'Pedra do Letreiro', 'Pedra da Santa'],
+    sectors: [
+      {
+        id: 'sector-araruna-boca',
+        name: 'Pedra da Boca (Maciço Principal)',
+        cragName: 'Parque Estadual da Pedra da Boca',
+        region: 'Curimataú',
+        city: 'Araruna',
+        state: 'PB',
+        coordinates: { latitude: -6.4522, longitude: -35.6811 },
+        elevationMeters: 620,
+        approachTimeMinutes: 20,
+        approachTrailDescription: 'Trilha do Parque Estadual a partir da Pousada do Seu Tico.',
+        accessStatus: 'aberto',
+        walls: [
+          {
+            id: 'wall-araruna-principal',
+            sectorId: 'sector-araruna-boca',
+            name: 'Paredão da Pedra da Boca',
+            orientation: 'S',
+            sunShadeNotes: 'Face sombreada em boa parte do dia.',
+            sunExposure: { morning: 'sombra', afternoon: 'sol' },
+            heightMeters: 120,
+            rockType: 'granito',
+            approachNotes: 'Caminhada clássica pela trilha principal do parque.',
+            fallbackPhotoUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1200&q=80',
+            photos: [{ id: 'p-pboca', url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1200&q=80', isMain: true }],
+            routes: [
+              {
+                id: 'route-boca-1',
+                wallId: 'wall-araruna-principal',
+                orderIndex: 1,
+                name: 'Via dos Cristais',
+                grade: { brazilian: '5º sup', french: '5c', yds: '5.9', danger: 'E1' },
+                heightMeters: 60,
+                pitchesCount: 2,
+                boltsCount: 12,
+                protectionType: 'grampo',
+                anchorType: 'dupla_com_anel',
+                style: 'esportiva',
+                description: 'Escalada clássica da Pedra da Boca com excelente aderência em quartzo.',
+              }
+            ]
+          }
+        ]
+      }
+    ],
+  },
+  {
+    id: 'dest-caja-banguelo',
+    name: 'Cajá / Mogeiro (Pedra do Banguelo)',
+    state: 'PB',
+    regionName: 'Vale do Paraíba',
+    coverImage: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80',
+    description: 'Lar da imponente Pedra do Banguelo, visível da rodovia BR-230. Escaladas clássicas de várias enfiadas em rocha sólida.',
+    rockType: 'Granito',
+    totalRoutes: 20,
+    totalSectors: 1,
+    has3D: false,
+    hasTrad: true,
+    hasSport: true,
+    hasBoulder: false,
+    distanceFromCapital: '88 km de João Pessoa • 45 km de Campina Grande',
+    highlights: ['Pedra do Banguelo', 'Face Nordeste'],
+    sectors: [
+      {
+        id: 'sector-banguelo',
+        name: 'Pedra do Banguelo',
+        cragName: 'Polo do Cajá',
+        region: 'Vale do Paraíba',
+        city: 'Cajá / Mogeiro',
+        state: 'PB',
+        coordinates: { latitude: -7.2891, longitude: -35.4312 },
+        elevationMeters: 380,
+        approachTimeMinutes: 25,
+        approachTrailDescription: 'Subida em trilha de pasto a partir da entrada da fazenda.',
+        accessStatus: 'aberto',
+        walls: [
+          {
+            id: 'wall-banguelo-leste',
+            sectorId: 'sector-banguelo',
+            name: 'Face Leste do Banguelo',
+            orientation: 'L',
+            sunShadeNotes: 'Sol pela manhã, sombra à tarde.',
+            sunExposure: { morning: 'sol', afternoon: 'sombra' },
+            heightMeters: 50,
+            rockType: 'granito',
+            approachNotes: 'Base com pedras soltas, atenção.',
+            fallbackPhotoUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80',
+            photos: [{ id: 'p-bang', url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80', isMain: true }],
+            routes: [
+              {
+                id: 'route-bang-1',
+                wallId: 'wall-banguelo-leste',
+                orderIndex: 1,
+                name: 'Directa do Banguelo',
+                grade: { brazilian: '6º', french: '6a', yds: '5.10a', danger: 'E1' },
+                heightMeters: 45,
+                pitchesCount: 2,
+                boltsCount: 10,
+                protectionType: 'grampo',
+                anchorType: 'dupla_com_anel',
+                style: 'esportiva',
+                description: 'Linha elegante que corta o centro da face.',
+              }
+            ]
+          }
+        ]
+      }
+    ],
+  },
+  {
+    id: 'dest-serra-caiada',
+    name: 'Serra Caiada',
+    state: 'RN',
+    regionName: 'Agreste Potiguar',
+    coverImage: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80',
+    description: 'Principal polo de escalada do Rio Grande do Norte. Paredes de granito com vias esportivas bem protegidas e comunidade ativa.',
+    rockType: 'Granito',
+    totalRoutes: 65,
+    totalSectors: 4,
+    has3D: false,
+    hasTrad: true,
+    hasSport: true,
+    hasBoulder: true,
+    distanceFromCapital: '80 km de Natal • 160 km de Algodão de Jandaíra',
+    highlights: ['Face Leste', 'Setor da Igreja', 'Boulders da Base'],
+    sectors: [
+      {
+        id: 'sector-serra-caiada-principal',
+        name: 'Face Leste de Serra Caiada',
+        cragName: 'Serra Caiada',
+        region: 'Agreste Potiguar',
+        city: 'Serra Caiada',
+        state: 'RN',
+        coordinates: { latitude: -6.1105, longitude: -35.7142 },
+        elevationMeters: 320,
+        approachTimeMinutes: 10,
+        approachTrailDescription: 'Acesso imediato pela rodovia com 10 minutos de caminhada.',
+        accessStatus: 'aberto',
+        walls: [
+          {
+            id: 'wall-caiada-leste',
+            sectorId: 'sector-serra-caiada-principal',
+            name: 'Paredão Central',
+            orientation: 'L',
+            sunShadeNotes: 'Sol pela manhã, sombra fresca após o meio-dia.',
+            sunExposure: { morning: 'sol', afternoon: 'sombra' },
+            heightMeters: 28,
+            rockType: 'granito',
+            approachNotes: 'Base confortável e arborizada.',
+            fallbackPhotoUrl: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80',
+            photos: [{ id: 'p-caiada', url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80', isMain: true }],
+            routes: [
+              {
+                id: 'route-caiada-1',
+                wallId: 'wall-caiada-leste',
+                orderIndex: 1,
+                name: 'Potiguar',
+                grade: { brazilian: '6º', french: '6a', yds: '5.10a', danger: 'E1' },
+                heightMeters: 25,
+                pitchesCount: 1,
+                boltsCount: 8,
+                protectionType: 'chapeleta',
+                anchorType: 'dupla_com_anel',
+                style: 'esportiva',
+                description: 'Aderência perfeita com ótimas agarras.',
+              }
+            ]
+          }
+        ]
+      }
+    ],
+  },
+  {
+    id: 'dest-serra-cipo',
+    name: 'Serra do Cipó',
+    state: 'MG',
+    regionName: 'Cordilheira do Espinhaço',
+    coverImage: 'https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=1200&q=80',
+    description: 'A meca da escalada esportiva no calcário brasileiro. Paredões imponentes, regletes finos e grandes tetos negativos.',
+    rockType: 'Calcário',
+    totalRoutes: 350,
+    totalSectors: 12,
+    has3D: true,
+    hasTrad: false,
+    hasSport: true,
+    hasBoulder: false,
+    distanceFromCapital: '100 km de Belo Horizonte',
+    highlights: ['Falésia dos Olhos', 'Setor Gafanhoto', 'Vale da Serra'],
+    sectors: [MOCK_SECTORS[1]],
+  }
+];
+

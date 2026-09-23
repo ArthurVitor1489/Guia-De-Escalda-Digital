@@ -224,3 +224,23 @@ export interface AscentLog {
   personalNotes: string;
   partner?: string;
 }
+
+// Entidade Polo / Destino de Escalada (Cidade / Região)
+export interface ClimbingDestination {
+  id: string;
+  name: string; // Ex: "Algodão de Jandaíra", "Campina Grande", "Sousa"
+  state: string; // Ex: "PB", "RN", "PE", "CE", "MG"
+  regionName: string; // Ex: "Curimataú Ocidental", "Agreste Paraibano", "Alto Sertão"
+  coverImage: string;
+  description: string;
+  rockType: string;
+  totalRoutes: number;
+  totalSectors: number;
+  has3D: boolean;
+  hasTrad: boolean;
+  hasSport: boolean;
+  hasBoulder: boolean;
+  distanceFromCapital?: string;
+  highlights: string[];
+  sectors: Sector[];
+}
