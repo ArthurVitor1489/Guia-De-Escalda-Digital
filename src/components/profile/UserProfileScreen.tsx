@@ -323,16 +323,6 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
           </TouchableOpacity>
 
           <View style={styles.headerActions}>
-            {/* Botão Dedicado: Trocar Foto */}
-            <TouchableOpacity
-              style={styles.changeAvatarBtn}
-              onPress={handleOpenAvatarModal}
-              activeOpacity={0.8}
-            >
-              <Camera size={14} color="#10B981" />
-              <Text style={styles.changeAvatarBtnText}>Trocar Foto</Text>
-            </TouchableOpacity>
-
             <TouchableOpacity
               style={styles.switchUserBtn}
               onPress={onOpenAuthModal}
@@ -824,22 +814,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#0F172A',
-  },
-  changeAvatarBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#10B981',
-  },
-  changeAvatarBtnText: {
-    color: '#10B981',
-    fontSize: 12,
-    fontWeight: '700',
   },
   headerActions: {
     flexDirection: 'row',
