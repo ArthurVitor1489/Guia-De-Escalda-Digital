@@ -1,25 +1,58 @@
 {
   "expo": {
-    "name": "guia-escalada-app",
-    "slug": "guia-escalada-app",
+    "name": "CRUX - Guia de Escalada",
+    "slug": "crux-guia-escalada",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
+    "scheme": "crux",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F172A"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.arthurvitor.crux",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "O CRUX precisa de acesso à câmera para que você possa fotografar as falésias, vias e registrar betas visuais na rocha.",
+        "NSPhotoLibraryUsageDescription": "O CRUX precisa acessar suas fotos para você compartilhar fotos de vias e croquis com a comunidade.",
+        "NSLocationWhenInUseUsageDescription": "O CRUX utiliza seu GPS para capturar as coordenadas da pedra e traçar a trilha de acesso em campo offline."
+      }
     },
     "android": {
+      "package": "com.arthurvitor.crux",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0F172A",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ],
       "predictiveBackGestureEnabled": false
     },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O CRUX precisa acessar suas fotos para você compartilhar imagens de vias e falésias com a comunidade.",
+          "cameraPermission": "O CRUX precisa de acesso à câmera para você fotografar pedras, croquis e vias de escalada em campo."
+        }
+      ]
+    ],
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     }
   }
 }
