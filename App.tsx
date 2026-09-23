@@ -318,26 +318,27 @@ export default function App() {
         </View>
       </View>
 
-      {/* Conteúdo Principal: Home, Guia da Falésia, Logbook ou Perfil */}
+      {/* Conteúdo Principal: Home, Guia da Falésia ou Perfil (com Diário incluso) */}
       {currentTab === 'home' ? (
         <HomeScreen
           destinations={destinations}
           onSelectDestination={handleSelectDestination}
           onOpenCreateCity={handleOpenCreateCity}
         />
-      ) : currentTab === 'logbook' ? (
-        <LogbookScreen logs={logs} onClose={() => setCurrentTab('home')} />
-      ) : currentTab === 'profile' ? (
+      ) : (currentTab === 'profile' || currentTab === 'logbook') ? (
         <UserProfileScreen
           user={currentUser}
           logs={logs}
           communityPhotos={communityPhotos}
+          destinations={destinations}
           customDestinations={destinations.filter(d => !CLIMBING_DESTINATIONS.some(c => c.id === d.id))}
+          initialTab={currentTab === 'logbook' ? 'ascents' : 'ascents'}
           onOpenAuthModal={() => setShowAuthModal(true)}
           onOpenPostPhoto={() => handleOpenPostPhoto()}
           onOpenCreateCrag={handleOpenCreateCrag}
           onLogout={handleLogout}
           onUpdateUser={(updated) => setCurrentUser(updated)}
+          onSaveAscent={handleSaveAscent}
         />
       ) : (
         <ScrollView style={styles.scrollBody} showsVerticalScrollIndicator={false}>
@@ -465,7 +466,7 @@ export default function App() {
         </ScrollView>
       )}
 
-      {/* Barra de Navegação Inferior Fixa (4 Abas) */}
+      {/* Barra de Navegação Inferior Fixa (3 Abas Principais) */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
           style={[styles.bottomBarItem, currentTab === 'home' && styles.bottomBarItemActive]}
@@ -488,21 +489,22 @@ export default function App() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.bottomBarItem, currentTab === 'logbook' && styles.bottomBarItemActive]}
-          onPress={() => setCurrentTab('logbook')}
-        >
-          <Award size={20} color={currentTab === 'logbook' ? '#F59E0B' : '#64748B'} />
-          <Text style={[styles.bottomBarText, currentTab === 'logbook' && styles.bottomBarTextActive]}>
-            Meu Diário
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.bottomBarItem, currentTab === 'profile' && styles.bottomBarItemActive]}
+          style={[
+            styles.bottomBarItem,
+            (currentTab === 'profile' || currentTab === 'logbook') && styles.bottomBarItemActive,
+          ]}
           onPress={() => setCurrentTab('profile')}
         >
-          <User size={20} color={currentTab === 'profile' ? '#A855F7' : '#64748B'} />
-          <Text style={[styles.bottomBarText, currentTab === 'profile' && styles.bottomBarTextActive]}>
+          <User
+            size={20}
+            color={(currentTab === 'profile' || currentTab === 'logbook') ? '#10B981' : '#64748B'}
+          />
+          <Text
+            style={[
+              styles.bottomBarText,
+              (currentTab === 'profile' || currentTab === 'logbook') && styles.bottomBarTextActive,
+            ]}
+          >
             Meu Perfil
           </Text>
         </TouchableOpacity>

@@ -38,8 +38,10 @@ import {
   X,
   Link2,
 } from 'lucide-react-native';
-import { getGradeBadgeColor } from '../../services/gradeConverter';
+import { getGradeBadgeColor, GRADE_TABLE } from '../../services/gradeConverter';
 import { CommunityService, DEFAULT_USER } from '../../services/communityService';
+import { StorageService } from '../../services/storageService';
+import { RegisterFeatModal, NewFeatData } from './RegisterFeatModal';
 
 // Galeria de avatares de escaladores para troca rápida em 1 clique
 const CLIMBER_AVATAR_PRESETS = [
@@ -90,11 +92,14 @@ interface UserProfileScreenProps {
   logs: AscentLog[];
   communityPhotos: CommunityPhoto[];
   customDestinations: ClimbingDestination[];
+  destinations?: ClimbingDestination[];
+  initialTab?: 'ascents' | 'photos' | 'crags';
   onOpenAuthModal: () => void;
   onOpenPostPhoto: () => void;
   onOpenCreateCrag: () => void;
   onLogout?: () => void;
   onUpdateUser?: (updatedUser: UserProfile) => void;
+  onSaveAscent?: (ascentData: any) => Promise<void> | void;
 }
 
 export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
@@ -102,13 +107,18 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
   logs,
   communityPhotos,
   customDestinations,
+  destinations = [],
+  initialTab = 'ascents',
   onOpenAuthModal,
   onOpenPostPhoto,
   onOpenCreateCrag,
   onLogout,
   onUpdateUser,
+  onSaveAscent,
 }) => {
-  const [activeTab, setActiveTab] = useState<'ascents' | 'photos' | 'crags'>('ascents');
+  const [activeTab, setActiveTab] = useState<'ascents' | 'photos' | 'crags'>(initialTab);
+  const [filterAscents, setFilterAscents] = useState<string>('all');
+  const [showRegisterFeatModal, setShowRegisterFeatModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [tempAvatarUrl, setTempAvatarUrl] = useState('');
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
@@ -261,10 +271,59 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
   // Filtra fotos postadas pelo usuário atual
   const userPhotos = safePhotos.filter(p => p && p.userId === safeUser.id);
 
-  // Calcula estatísticas
+  // Calcula estatísticas do diário de feitos
   const onsightCount = safeLogs.filter(l => l && l.style === 'onsight').length;
   const flashCount = safeLogs.filter(l => l && l.style === 'flash').length;
   const redpointCount = safeLogs.filter(l => l && l.style === 'redpoint').length;
+  const boulderCount = safeLogs.filter(l => {
+    const grade = (l?.gradeStr || '').toUpperCase();
+    return grade.startsWith('V') || (l as any)?.discipline === 'boulder';
+  }).length;
+
+  // Filtragem dos registros do diário por estilo ou modalidade
+  const filteredLogs = safeLogs.filter((log) => {
+    if (!log) return false;
+    if (filterAscents === 'all') return true;
+    if (filterAscents === 'onsight') return log.style === 'onsight';
+    if (filterAscents === 'flash') return log.style === 'flash';
+    if (filterAscents === 'redpoint') return log.style === 'redpoint';
+    if (filterAscents === 'boulder') {
+      const grade = (log.gradeStr || '').toUpperCase();
+      return grade.startsWith('V') || (log as any).discipline === 'boulder';
+    }
+    return true;
+  });
+
+  // Salva novo feito / cadena no diário do escalador
+  const handleSaveFeat = async (featData: NewFeatData) => {
+    try {
+      if (onSaveAscent) {
+        await onSaveAscent(featData);
+      } else {
+        await StorageService.addAscent(featData);
+      }
+
+      // Se o grau registrado for superior ao grau máximo exibido no perfil, atualiza automaticamente
+      const currentHardest = safeUser.hardestGrade || '5º';
+      const currentMapping = GRADE_TABLE.find(
+        g => g.brazilian.toLowerCase() === currentHardest.toLowerCase()
+      );
+      const newMapping = GRADE_TABLE.find(
+        g => g.brazilian.toLowerCase() === featData.gradeStr.toLowerCase()
+      );
+
+      if (newMapping && (!currentMapping || newMapping.score > currentMapping.score)) {
+        const updated = {
+          ...safeUser,
+          hardestGrade: featData.gradeStr,
+        };
+        await CommunityService.updateProfile(updated);
+        onUpdateUser?.(updated);
+      }
+    } catch (err) {
+      console.warn('Erro ao salvar feito no diário do perfil:', err);
+    }
+  };
 
   // Se o usuário não estiver logado (modo visitante)
   if (!user) {
@@ -407,7 +466,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
         >
           <Award size={16} color={activeTab === 'ascents' ? '#10B981' : '#64748B'} />
           <Text style={[styles.tabButtonText, activeTab === 'ascents' && styles.tabButtonTextActive]}>
-            Cadenas ({safeLogs.length})
+            Meu Diário ({safeLogs.length})
           </Text>
         </TouchableOpacity>
 
@@ -432,34 +491,140 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
         </TouchableOpacity>
       </View>
 
-      {/* Conteúdo da Aba 1: Cadenas & Diário */}
+      {/* Conteúdo da Aba 1: Meu Diário de Feitos e Cadenas */}
       {activeTab === 'ascents' && (
         <View style={styles.sectionContainer}>
-          {safeLogs.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Award size={40} color="#334155" />
-              <Text style={styles.emptyStateTitle}>Nenhuma cadena registrada</Text>
-              <Text style={styles.emptyStateSub}>
-                Abra uma via no Guia da Parede e clique em "Registrar Cadena" para alimentar seu logbook!
+          {/* Botão de Registro de Feitos / Cadenas */}
+          <TouchableOpacity
+            style={styles.registerFeatBanner}
+            onPress={() => setShowRegisterFeatModal(true)}
+            activeOpacity={0.85}
+          >
+            <View style={styles.registerFeatIconBox}>
+              <Plus size={20} color="#0F172A" />
+            </View>
+            <View style={styles.registerFeatTextBox}>
+              <View style={styles.registerFeatBadgeRow}>
+                <Text style={styles.registerFeatBannerTitle}>REGISTRAR FEITO / CADENA</Text>
+                <View style={styles.diaryBadge}>
+                  <Text style={styles.diaryBadgeText}>+ DIÁRIO</Text>
+                </View>
+              </View>
+              <Text style={styles.registerFeatBannerSub}>
+                Anote uma via esportiva, boulder ou projeto no seu diário de feitos
               </Text>
+            </View>
+            <Award size={22} color="#10B981" />
+          </TouchableOpacity>
+
+          {/* Filtros por Estilo */}
+          <View style={styles.filtersBar}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+              <TouchableOpacity
+                style={[styles.filterChip, filterAscents === 'all' && styles.filterChipActive]}
+                onPress={() => setFilterAscents('all')}
+              >
+                <Text style={[styles.filterChipText, filterAscents === 'all' && styles.filterChipTextActive]}>
+                  Todas ({safeLogs.length})
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterChip, filterAscents === 'onsight' && styles.filterChipActive]}
+                onPress={() => setFilterAscents('onsight')}
+              >
+                <Text style={[styles.filterChipText, filterAscents === 'onsight' && styles.filterChipTextActive]}>
+                  À Vista ({onsightCount})
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterChip, filterAscents === 'flash' && styles.filterChipActive]}
+                onPress={() => setFilterAscents('flash')}
+              >
+                <Text style={[styles.filterChipText, filterAscents === 'flash' && styles.filterChipTextActive]}>
+                  Flash ({flashCount})
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterChip, filterAscents === 'redpoint' && styles.filterChipActive]}
+                onPress={() => setFilterAscents('redpoint')}
+              >
+                <Text style={[styles.filterChipText, filterAscents === 'redpoint' && styles.filterChipTextActive]}>
+                  Redpoint ({redpointCount})
+                </Text>
+              </TouchableOpacity>
+              {boulderCount > 0 && (
+                <TouchableOpacity
+                  style={[styles.filterChip, filterAscents === 'boulder' && styles.filterChipActive]}
+                  onPress={() => setFilterAscents('boulder')}
+                >
+                  <Text style={[styles.filterChipText, filterAscents === 'boulder' && styles.filterChipTextActive]}>
+                    Boulders ({boulderCount})
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
+          </View>
+
+          {/* Lista de Registros */}
+          {filteredLogs.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Award size={44} color="#334155" />
+              <Text style={styles.emptyStateTitle}>Nenhum feito registrado nesta categoria</Text>
+              <Text style={styles.emptyStateSub}>
+                Adicione suas cadenas de vias esportivas ou boulders diretamente ao seu perfil para registrar sua evolução!
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyRegisterBtn}
+                onPress={() => setShowRegisterFeatModal(true)}
+                activeOpacity={0.8}
+              >
+                <Plus size={16} color="#0F172A" />
+                <Text style={styles.emptyRegisterBtnText}>REGISTRAR PRIMEIRO FEITO</Text>
+              </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.ascentsList}>
-              {safeLogs.map((log) => {
+              {filteredLogs.map((log) => {
                 const gradeStr = log.gradeStr || (log as any).routeGrade || '5º';
                 const gradeColor = getGradeBadgeColor(gradeStr);
                 const ratingStars = log.ratingStars || (log as any).rating || 5;
                 const notes = log.personalNotes || (log as any).notes || '';
                 const styleKey = log.style || 'redpoint';
+                const isBoulder = gradeStr.toUpperCase().startsWith('V') || (log as any).discipline === 'boulder';
+                const isTrad = (log as any).discipline === 'trad';
 
                 return (
                   <View key={log.id} style={styles.ascentCard}>
                     <View style={styles.ascentHeader}>
                       <View style={styles.ascentTitleGroup}>
-                        <Text style={styles.ascentRouteName}>{log.routeName}</Text>
-                        <Text style={styles.ascentLocation}>
-                          {log.wallName} • {log.sectorName}
-                        </Text>
+                        <View style={styles.ascentTypeRow}>
+                          <Text style={styles.ascentRouteName}>{log.routeName}</Text>
+                          <View
+                            style={[
+                              styles.disciplineTag,
+                              isBoulder
+                                ? { backgroundColor: 'rgba(245, 158, 11, 0.15)', borderColor: '#F59E0B' }
+                                : isTrad
+                                ? { backgroundColor: 'rgba(56, 189, 248, 0.15)', borderColor: '#38BDF8' }
+                                : { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderColor: '#10B981' },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.disciplineTagText,
+                                isBoulder ? { color: '#F59E0B' } : isTrad ? { color: '#38BDF8' } : { color: '#10B981' },
+                              ]}
+                            >
+                              {isBoulder ? 'BOULDER' : isTrad ? 'TRAD' : 'ESPORTIVA'}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.ascentLocationRow}>
+                          <MapPin size={12} color="#38BDF8" />
+                          <Text style={styles.ascentLocation}>
+                            {log.wallName} • {log.sectorName}
+                          </Text>
+                        </View>
                       </View>
                       <View style={[styles.ascentGradeBadge, { backgroundColor: gradeColor }]}>
                         <Text style={styles.ascentGradeText}>{gradeStr}</Text>
@@ -491,7 +656,10 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
                         ))}
                       </View>
 
-                      <Text style={styles.ascentDate}>{log.date}</Text>
+                      <View style={styles.dateRow}>
+                        <Calendar size={11} color="#94A3B8" />
+                        <Text style={styles.ascentDate}>{log.date}</Text>
+                      </View>
                     </View>
 
                     {notes ? (
@@ -499,7 +667,10 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
                     ) : null}
 
                     {log.partner ? (
-                      <Text style={styles.ascentPartner}>🧗 Parceria: {log.partner}</Text>
+                      <View style={styles.partnerRow}>
+                        <User size={12} color="#94A3B8" />
+                        <Text style={styles.ascentPartner}>Parceria: {log.partner}</Text>
+                      </View>
                     ) : null}
                   </View>
                 );
@@ -759,6 +930,14 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
           </View>
         </View>
       </Modal>
+
+      {/* Modal de Registro de Feito / Cadena no Diário */}
+      <RegisterFeatModal
+        visible={showRegisterFeatModal}
+        onClose={() => setShowRegisterFeatModal(false)}
+        onSaveFeat={handleSaveFeat}
+        destinations={destinations}
+      />
 
       <View style={{ height: 100 }} />
     </ScrollView>
@@ -1029,6 +1208,134 @@ const styles = StyleSheet.create({
   },
   sectionContainer: {
     padding: 16,
+  },
+  // Botão em Destaque: Registrar Feito no Diário
+  registerFeatBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E293B',
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#10B981',
+    gap: 12,
+    marginBottom: 14,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+  },
+  registerFeatIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#10B981',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  registerFeatTextBox: {
+    flex: 1,
+  },
+  registerFeatBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  registerFeatBannerTitle: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0.3,
+  },
+  diaryBadge: {
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  diaryBadgeText: {
+    color: '#10B981',
+    fontSize: 9,
+    fontWeight: '900',
+  },
+  registerFeatBannerSub: {
+    color: '#94A3B8',
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  filtersBar: {
+    marginBottom: 14,
+  },
+  filterChip: {
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  filterChipActive: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderColor: '#10B981',
+  },
+  filterChipText: {
+    color: '#94A3B8',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  filterChipTextActive: {
+    color: '#10B981',
+    fontWeight: '800',
+  },
+  emptyRegisterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#10B981',
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  emptyRegisterBtnText: {
+    color: '#0F172A',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  ascentTypeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  disciplineTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  disciplineTagText: {
+    fontSize: 9,
+    fontWeight: '900',
+  },
+  ascentLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 3,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: 'auto',
+  },
+  partnerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 6,
   },
   addPhotoBannerBtn: {
     flexDirection: 'row',
