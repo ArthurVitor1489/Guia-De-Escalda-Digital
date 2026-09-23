@@ -5,6 +5,7 @@ import { Route, Wall, VisualRepresentationTier } from '../../types/climbing';
 import { Wall3DViewer } from '../viewer3d/Wall3DViewer';
 import { WallTopo2DViewer } from '../topo2d/WallTopo2DViewer';
 import { WallPhotoFallbackViewer } from './WallPhotoFallbackViewer';
+import { SunShadeCard } from '../common/EENeBadge';
 import { Compass, Sun, Mountain, Layers, Box, Camera } from 'lucide-react-native';
 
 interface WallVisualContainerProps {
@@ -117,6 +118,11 @@ export const WallVisualContainer: React.FC<WallVisualContainerProps> = ({
             <Text style={styles.techCardTitle}>Orientação</Text>
           </View>
           <Text style={styles.techCardValue}>{wall.orientation}</Text>
+          {wall.sunExposure && (
+            <View style={{ marginTop: 6 }}>
+              <SunShadeCard sunExposure={wall.sunExposure} />
+            </View>
+          )}
           <Text style={styles.techCardSub}>{wall.sunShadeNotes}</Text>
         </View>
 
@@ -128,7 +134,7 @@ export const WallVisualContainer: React.FC<WallVisualContainerProps> = ({
           <Text style={styles.techCardValue}>
             {wall.rockType.charAt(0).toUpperCase() + wall.rockType.slice(1)}
           </Text>
-          <Text style={styles.techCardSub}>Aderência excelente</Text>
+          <Text style={styles.techCardSub}>Granito claro com agarras fartas e fendas</Text>
         </View>
       </View>
     </View>

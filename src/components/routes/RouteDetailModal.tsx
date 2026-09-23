@@ -22,6 +22,7 @@ import {
   Calendar,
 } from 'lucide-react-native';
 import { formatRouteGrade, getGradeBadgeColor, DANGER_EXPLANATIONS } from '../../services/gradeConverter';
+import { ProtectionBadge } from '../common/EENeBadge';
 
 interface RouteDetailModalProps {
   route: Route | null;
@@ -59,8 +60,11 @@ export const RouteDetailModal: React.FC<RouteDetailModalProps> = ({
           {/* Cabeçalho da Via */}
           <View style={styles.header}>
             <View style={styles.headerTitleGroup}>
-              <View style={styles.orderBadge}>
-                <Text style={styles.orderBadgeText}>Via #{route.orderIndex}</Text>
+              <View style={styles.badgeRow}>
+                <View style={styles.orderBadge}>
+                  <Text style={styles.orderBadgeText}>Via #{route.orderIndex}</Text>
+                </View>
+                <ProtectionBadge type={route.protectionType} isProject={route.isProject} />
               </View>
               <Text style={styles.routeName}>{route.name}</Text>
             </View>
@@ -126,6 +130,17 @@ export const RouteDetailModal: React.FC<RouteDetailModalProps> = ({
                   </Text>
                 </View>
                 <Text style={styles.dangerDescription}>{dangerInfo.description}</Text>
+              </View>
+            )}
+
+            {/* Equipamentos Móveis Sugeridos (Rack) */}
+            {route.rackRequired && (
+              <View style={styles.rackBox}>
+                <View style={styles.rackHeader}>
+                  <Shield size={14} color="#FFE600" />
+                  <Text style={styles.rackTitle}>RACK / EQUIPAMENTO MÓVEL SUGERIDO</Text>
+                </View>
+                <Text style={styles.rackText}>{route.rackRequired}</Text>
               </View>
             )}
 
@@ -227,13 +242,18 @@ const styles = StyleSheet.create({
   headerTitleGroup: {
     flex: 1,
   },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
   orderBadge: {
     alignSelf: 'flex-start',
     backgroundColor: '#1E293B',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
-    marginBottom: 4,
   },
   orderBadgeText: {
     color: '#38BDF8',
@@ -335,6 +355,32 @@ const styles = StyleSheet.create({
   dangerDescription: {
     color: '#CBD5E1',
     fontSize: 12,
+    lineHeight: 18,
+  },
+  rackBox: {
+    backgroundColor: '#1E293B',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFE600',
+    marginBottom: 16,
+  },
+  rackHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  rackTitle: {
+    color: '#FFE600',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  rackText: {
+    color: '#F8FAFC',
+    fontSize: 12,
+    fontWeight: '600',
     lineHeight: 18,
   },
   sectionBlock: {

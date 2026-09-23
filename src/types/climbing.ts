@@ -82,6 +82,18 @@ export interface BoltersInfo {
   hardwareNotes?: string; // Ex: "Grampos de titânio 1/2 colados com resina epóxi"
 }
 
+export type ProtectionCategory = 
+  | 'chapeleta' 
+  | 'grampo' 
+  | 'movel' 
+  | 'mista' 
+  | 'artificial';
+
+export interface SunExposureInfo {
+  morning: 'sol' | 'sombra';
+  afternoon: 'sol' | 'sombra';
+}
+
 // Entidade Via de Escalada
 export interface Route {
   id: string;
@@ -92,7 +104,9 @@ export interface Route {
   heightMeters: number;
   pitchesCount: number; // Quantidade de enfiadas
   boltsCount: number;   // Quantidade de costuras necessárias
-  gearRequired?: string; // Equipamentos móveis ou observações
+  protectionType?: ProtectionCategory; // Grampo, Chapeleta, Móvel, Mista, Artificial
+  isProject?: boolean;  // Via em projeto / ainda não encadenada
+  rackRequired?: string; // Ex: "1 jogo de friends e 1 jogo de nuts, Camalots #.3 ao #3"
   anchorType: AnchorType;
   style: RouteStyle;
   firstAscent?: FirstAscentInfo;
@@ -157,6 +171,7 @@ export interface Wall {
   name: string;
   orientation: CompassOrientation;
   sunShadeNotes: string; // Ex: "Sol pela manhã até as 12h, sombra à tarde toda"
+  sunExposure?: SunExposureInfo; // Ícone de Sol Manhã / Tarde Sombra clássico do EENe
   heightMeters: number;
   rockType: RockType;
   approachNotes: string; // Ex: "10 metros à direita da trilha principal"
