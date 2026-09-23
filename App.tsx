@@ -324,7 +324,6 @@ export default function App() {
           destinations={destinations}
           onSelectDestination={handleSelectDestination}
           onOpenCreateCity={handleOpenCreateCity}
-          onOpenCreateCrag={handleOpenCreateCrag}
         />
       ) : currentTab === 'logbook' ? (
         <LogbookScreen logs={logs} onClose={() => setCurrentTab('home')} />

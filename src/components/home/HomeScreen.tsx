@@ -28,14 +28,13 @@ interface HomeScreenProps {
   destinations: ClimbingDestination[];
   onSelectDestination: (dest: ClimbingDestination) => void;
   onOpenCreateCity: () => void;
-  onOpenCreateCrag: () => void;
+  onOpenCreateCrag?: () => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   destinations,
   onSelectDestination,
   onOpenCreateCity,
-  onOpenCreateCrag,
 }) => {
   const [selectedState, setSelectedState] = useState<string>('TODOS');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -71,26 +70,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           Escolha uma cidade ou polo para explorar pedras, vias esportivas, boulders e paredes em 3D.
         </Text>
 
-        {/* Botões de Cadastro Hierárquico: Cidade e Pedra */}
-        <View style={styles.heroButtonsRow}>
-          <TouchableOpacity
-            style={styles.createCityHeroBtn}
-            onPress={onOpenCreateCity}
-            activeOpacity={0.8}
-          >
-            <MapPin size={15} color="#0F172A" />
-            <Text style={styles.createCityHeroBtnText}>+ CADASTRAR CIDADE</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.createCragHeroBtn}
-            onPress={onOpenCreateCrag}
-            activeOpacity={0.8}
-          >
-            <Plus size={15} color="#FFFFFF" />
-            <Text style={styles.createCragHeroBtnText}>+ CADASTRAR PEDRA</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Botão de Cadastro: Cidade / Polo (Nível 1) */}
+        <TouchableOpacity
+          style={styles.createCityHeroBtn}
+          onPress={onOpenCreateCity}
+          activeOpacity={0.8}
+        >
+          <Plus size={16} color="#0F172A" />
+          <Text style={styles.createCityHeroBtnText}>CADASTRAR NOVA CIDADE / POLO</Text>
+        </TouchableOpacity>
 
         {/* Barra de Pesquisa */}
         <View style={styles.searchBar}>
@@ -295,42 +283,20 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginBottom: 14,
   },
-  heroButtonsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 14,
-  },
   createCityHeroBtn: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 8,
     backgroundColor: '#38BDF8',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
     borderRadius: 12,
+    marginBottom: 14,
   },
   createCityHeroBtnText: {
     color: '#0F172A',
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  createCragHeroBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#10B981',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  createCragHeroBtnText: {
-    color: '#0F172A',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
