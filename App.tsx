@@ -13,6 +13,7 @@ import { Sector, Wall, Route, AscentLog, ClimbingDestination } from './src/types
 import { MOCK_SECTORS, CLIMBING_DESTINATIONS } from './src/services/mockData';
 import { StorageService } from './src/services/storageService';
 import { HomeScreen } from './src/components/home/HomeScreen';
+import { CreateCragModal } from './src/components/home/CreateCragModal';
 import { WallVisualContainer } from './src/components/wall/WallVisualContainer';
 import { RouteDetailModal } from './src/components/routes/RouteDetailModal';
 import { LogAscentModal } from './src/components/logbook/LogAscentModal';
@@ -26,16 +27,18 @@ import {
   WifiOff,
   ArrowLeft,
   Map,
+  Plus,
 } from 'lucide-react-native';
 
 export default function App() {
-  const [destinations] = useState<ClimbingDestination[]>(CLIMBING_DESTINATIONS);
+  const [destinations, setDestinations] = useState<ClimbingDestination[]>(CLIMBING_DESTINATIONS);
   const [selectedDestination, setSelectedDestination] = useState<ClimbingDestination>(CLIMBING_DESTINATIONS[0]);
   const [activeSectorIndex, setActiveSectorIndex] = useState(0);
   const [activeWallIndex, setActiveWallIndex] = useState(0);
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [logbookRoute, setLogbookRoute] = useState<Route | null>(null);
   const [showApproachModal, setShowApproachModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [currentTab, setCurrentTab] = useState<'home' | 'guide' | 'logbook'>('home');
   const [gradeSystem, setGradeSystem] = useState<'brazilian' | 'french' | 'yds'>('brazilian');
   const [logs, setLogs] = useState<AscentLog[]>([]);
@@ -45,13 +48,17 @@ export default function App() {
   const currentSector = currentSectors[activeSectorIndex] || currentSectors[0];
   const currentWall = currentSector.walls[activeWallIndex] || currentSector.walls[0];
 
-  // Carrega preferências e diário de escalada ao iniciar
+  // Carrega preferências, destinos customizados e diário de escalada ao iniciar
   useEffect(() => {
     async function loadInitialData() {
       const savedLogs = await StorageService.getLogbook();
       setLogs(savedLogs);
       const prefs = await StorageService.getPreferences();
       setGradeSystem(prefs.gradeSystem);
+      const customDests = await StorageService.getCustomDestinations();
+      if (customDests && customDests.length > 0) {
+        setDestinations([...customDests, ...CLIMBING_DESTINATIONS]);
+      }
     }
     loadInitialData();
   }, []);
@@ -73,6 +80,17 @@ export default function App() {
   const handleSaveAscent = async (ascentData: any) => {
     const newLog = await StorageService.addAscent(ascentData);
     setLogs(prev => [newLog, ...prev]);
+  };
+
+  // Salva uma nova pedra / destino cadastrado em campo
+  const handleSaveCustomCrag = async (newDest: ClimbingDestination) => {
+    await StorageService.saveCustomDestination(newDest);
+    setDestinations(prev => [newDest, ...prev.filter(d => d.id !== newDest.id)]);
+    setSelectedDestination(newDest);
+    setActiveSectorIndex(0);
+    setActiveWallIndex(0);
+    setSelectedRoute(null);
+    setCurrentTab('guide');
   };
 
   // Seleciona um destino a partir da Tela Inicial
@@ -136,6 +154,7 @@ export default function App() {
         <HomeScreen
           destinations={destinations}
           onSelectDestination={handleSelectDestination}
+          onOpenCreateCrag={() => setShowCreateModal(true)}
         />
       ) : currentTab === 'logbook' ? (
         <LogbookScreen logs={logs} onClose={() => setCurrentTab('home')} />
@@ -290,6 +309,13 @@ export default function App() {
         sector={currentSector}
         visible={showApproachModal}
         onClose={() => setShowApproachModal(false)}
+      />
+
+      {/* Modal de Cadastro Manual de Pedra / Falésia em Campo */}
+      <CreateCragModal
+        visible={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSave={handleSaveCustomCrag}
       />
     </SafeAreaView>
   );

@@ -21,16 +21,19 @@ import {
   Box,
   Shield,
   Star,
+  Plus,
 } from 'lucide-react-native';
 
 interface HomeScreenProps {
   destinations: ClimbingDestination[];
   onSelectDestination: (dest: ClimbingDestination) => void;
+  onOpenCreateCrag: () => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   destinations,
   onSelectDestination,
+  onOpenCreateCrag,
 }) => {
   const [selectedState, setSelectedState] = useState<string>('TODOS');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -65,6 +68,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         <Text style={styles.heroSubtitle}>
           Escolha uma cidade ou polo para explorar paredes em 3D, croquis interativos e topos de vias.
         </Text>
+
+        {/* Botão de Cadastro Rápido de Pedra em Campo */}
+        <TouchableOpacity
+          style={styles.createCragHeroBtn}
+          onPress={onOpenCreateCrag}
+          activeOpacity={0.8}
+        >
+          <Plus size={18} color="#0F172A" />
+          <Text style={styles.createCragHeroBtnText}>CADASTRAR NOVA PEDRA EM CAMPO</Text>
+        </TouchableOpacity>
 
         {/* Barra de Pesquisa */}
         <View style={styles.searchBar}>
@@ -268,6 +281,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     marginBottom: 14,
+  },
+  createCragHeroBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#10B981',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 14,
+  },
+  createCragHeroBtnText: {
+    color: '#0F172A',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
   searchBar: {
     flexDirection: 'row',

@@ -1,12 +1,13 @@
 // Gerenciamento de Armazenamento Local e Offline
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AscentLog, Sector } from '../types/climbing';
+import { AscentLog, Sector, ClimbingDestination } from '../types/climbing';
 import { INITIAL_LOGBOOK_ENTRIES, MOCK_SECTORS } from './mockData';
 
 const STORAGE_KEYS = {
   LOGBOOK: '@guia_escalada:logbook',
   FAVORITES: '@guia_escalada:favorites',
   OFFLINE_SECTORS: '@guia_escalada:offline_sectors',
+  CUSTOM_DESTINATIONS: '@guia_escalada:custom_destinations',
   USER_PREFERENCES: '@guia_escalada:preferences',
 };
 
@@ -94,5 +95,26 @@ export const StorageService = {
   async getAllSectors(): Promise<Sector[]> {
     // No futuro, integra com Supabase/API remota e faz sincronização
     return MOCK_SECTORS;
+  },
+
+  async getCustomDestinations(): Promise<ClimbingDestination[]> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.CUSTOM_DESTINATIONS);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  async saveCustomDestination(newDest: ClimbingDestination): Promise<ClimbingDestination[]> {
+    try {
+      const current = await this.getCustomDestinations();
+      const updated = [newDest, ...current.filter(d => d.id !== newDest.id)];
+      await AsyncStorage.setItem(STORAGE_KEYS.CUSTOM_DESTINATIONS, JSON.stringify(updated));
+      return updated;
+    } catch (e) {
+      console.warn('Erro ao salvar novo destino:', e);
+      return [];
+    }
   }
 };
