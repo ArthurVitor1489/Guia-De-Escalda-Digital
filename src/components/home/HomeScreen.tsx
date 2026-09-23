@@ -27,12 +27,14 @@ import {
 interface HomeScreenProps {
   destinations: ClimbingDestination[];
   onSelectDestination: (dest: ClimbingDestination) => void;
+  onOpenCreateCity: () => void;
   onOpenCreateCrag: () => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   destinations,
   onSelectDestination,
+  onOpenCreateCity,
   onOpenCreateCrag,
 }) => {
   const [selectedState, setSelectedState] = useState<string>('TODOS');
@@ -66,18 +68,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </View>
         <Text style={styles.heroTitle}>Onde vamos escalar hoje?</Text>
         <Text style={styles.heroSubtitle}>
-          Escolha uma cidade ou polo para explorar paredes em 3D, croquis interativos e topos de vias.
+          Escolha uma cidade ou polo para explorar pedras, vias esportivas, boulders e paredes em 3D.
         </Text>
 
-        {/* Botão de Cadastro Rápido de Pedra em Campo */}
-        <TouchableOpacity
-          style={styles.createCragHeroBtn}
-          onPress={onOpenCreateCrag}
-          activeOpacity={0.8}
-        >
-          <Plus size={18} color="#0F172A" />
-          <Text style={styles.createCragHeroBtnText}>CADASTRAR NOVA PEDRA EM CAMPO</Text>
-        </TouchableOpacity>
+        {/* Botões de Cadastro Hierárquico: Cidade e Pedra */}
+        <View style={styles.heroButtonsRow}>
+          <TouchableOpacity
+            style={styles.createCityHeroBtn}
+            onPress={onOpenCreateCity}
+            activeOpacity={0.8}
+          >
+            <MapPin size={15} color="#0F172A" />
+            <Text style={styles.createCityHeroBtnText}>+ CADASTRAR CIDADE</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.createCragHeroBtn}
+            onPress={onOpenCreateCrag}
+            activeOpacity={0.8}
+          >
+            <Plus size={15} color="#FFFFFF" />
+            <Text style={styles.createCragHeroBtnText}>+ CADASTRAR PEDRA</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Barra de Pesquisa */}
         <View style={styles.searchBar}>
@@ -282,20 +295,42 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginBottom: 14,
   },
-  createCragHeroBtn: {
+  heroButtonsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+  createCityHeroBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
+    backgroundColor: '#38BDF8',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  createCityHeroBtnText: {
+    color: '#0F172A',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  createCragHeroBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     backgroundColor: '#10B981',
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     borderRadius: 12,
-    marginBottom: 14,
   },
   createCragHeroBtnText: {
     color: '#0F172A',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.5,
   },

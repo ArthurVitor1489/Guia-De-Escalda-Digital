@@ -35,6 +35,33 @@ export const GRADE_TABLE: GradeMapping[] = [
   { score: 230, brazilian: '12a', french: '8c+', yds: '5.14b', color: '#3B0764' },
 ];
 
+export interface BoulderGradeMapping {
+  score: number;
+  vGrade: string; // V-Scale (V0, V1, V2... V16)
+  font: string;   // Fontainebleau (4, 5, 6A, 6B... 8C+)
+  color: string;
+}
+
+export const BOULDER_GRADE_TABLE: BoulderGradeMapping[] = [
+  { score: 10, vGrade: 'V0', font: '4', color: '#10B981' },
+  { score: 20, vGrade: 'V1', font: '5', color: '#10B981' },
+  { score: 30, vGrade: 'V2', font: '5+', color: '#3B82F6' },
+  { score: 40, vGrade: 'V3', font: '6A', color: '#3B82F6' },
+  { score: 50, vGrade: 'V4', font: '6B', color: '#3B82F6' },
+  { score: 60, vGrade: 'V5', font: '6C', color: '#8B5CF6' },
+  { score: 70, vGrade: 'V6', font: '7A', color: '#8B5CF6' },
+  { score: 80, vGrade: 'V7', font: '7A+', color: '#8B5CF6' },
+  { score: 90, vGrade: 'V8', font: '7B', color: '#EC4899' },
+  { score: 100, vGrade: 'V9', font: '7C', color: '#EC4899' },
+  { score: 110, vGrade: 'V10', font: '7C+', color: '#F59E0B' },
+  { score: 120, vGrade: 'V11', font: '8A', color: '#EF4444' },
+  { score: 130, vGrade: 'V12', font: '8A+', color: '#DC2626' },
+  { score: 140, vGrade: 'V13', font: '8B', color: '#B91C1C' },
+  { score: 150, vGrade: 'V14', font: '8B+', color: '#991B1B' },
+  { score: 160, vGrade: 'V15', font: '8C', color: '#7F1D1D' },
+  { score: 170, vGrade: 'V16', font: '8C+', color: '#581C87' },
+];
+
 export const DANGER_EXPLANATIONS: Record<DangerRating, { title: string; description: string; badgeColor: string }> = {
   E1: {
     title: 'E1 — Bem Protegida',
@@ -64,9 +91,16 @@ export const DANGER_EXPLANATIONS: Record<DangerRating, { title: string; descript
 };
 
 /**
- * Retorna a graduação formatada de acordo com o sistema preferido (padrão Brasileiro)
+ * Retorna a graduação formatada de acordo com o sistema preferido (padrão Brasileiro ou Boulder V-grade)
  */
 export function formatRouteGrade(route: Route, preferred: 'brazilian' | 'french' | 'yds' = 'brazilian'): string {
+  if (route.style === 'boulder') {
+    if (preferred === 'french') {
+      return route.grade.french || route.grade.brazilian;
+    }
+    return route.grade.brazilian;
+  }
+
   let mainGrade = route.grade.brazilian;
   if (preferred === 'french') mainGrade = route.grade.french;
   if (preferred === 'yds') mainGrade = route.grade.yds;
@@ -78,11 +112,21 @@ export function formatRouteGrade(route: Route, preferred: 'brazilian' | 'french'
 }
 
 /**
- * Retorna a cor correspondente à dificuldade da via (à prova de falhas)
+ * Retorna a cor correspondente à dificuldade da via ou boulder (à prova de falhas)
  */
 export function getGradeBadgeColor(gradeStr?: string | null): string {
   if (!gradeStr || typeof gradeStr !== 'string') return '#6B7280';
   const cleanGrade = gradeStr.trim().toLowerCase();
+
+  // Verifica primeiro se é um boulder (V-grade ou Font)
+  const boulderMatch = BOULDER_GRADE_TABLE.find(
+    b => b.vGrade.toLowerCase() === cleanGrade ||
+         b.font.toLowerCase() === cleanGrade ||
+         cleanGrade.startsWith(b.vGrade.toLowerCase())
+  );
+  if (boulderMatch) return boulderMatch.color;
+
+  // Verifica se é uma via de corda (esportiva/trad)
   const match = GRADE_TABLE.find(
     g => (g.brazilian && g.brazilian.toLowerCase() === cleanGrade) ||
          (g.french && g.french.toLowerCase() === cleanGrade) ||
@@ -90,3 +134,4 @@ export function getGradeBadgeColor(gradeStr?: string | null): string {
   );
   return match ? match.color : '#6B7280';
 }
+

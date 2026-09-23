@@ -116,5 +116,103 @@ export const StorageService = {
       console.warn('Erro ao salvar novo destino:', e);
       return [];
     }
+  },
+
+  async updateDestination(updatedDest: ClimbingDestination): Promise<void> {
+    try {
+      const current = await this.getCustomDestinations();
+      const index = current.findIndex(d => d.id === updatedDest.id);
+      let updated: ClimbingDestination[];
+      if (index >= 0) {
+        updated = current.map(d => (d.id === updatedDest.id ? updatedDest : d));
+      } else {
+        updated = [updatedDest, ...current];
+      }
+      await AsyncStorage.setItem(STORAGE_KEYS.CUSTOM_DESTINATIONS, JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Erro ao atualizar destino:', e);
+    }
+  },
+
+  async addSectorToDestination(destId: string, newSector: Sector, baseDestination?: ClimbingDestination): Promise<ClimbingDestination | null> {
+    try {
+      const current = await this.getCustomDestinations();
+      let targetDest = current.find(d => d.id === destId);
+      
+      if (!targetDest && baseDestination) {
+        targetDest = JSON.parse(JSON.stringify(baseDestination));
+      }
+
+      if (!targetDest) return null;
+
+      const sectors = targetDest.sectors || [];
+      const updatedSectors = [...sectors, newSector];
+      const updatedDest: ClimbingDestination = {
+        ...targetDest,
+        sectors: updatedSectors,
+        totalSectors: updatedSectors.length,
+        totalRoutes: updatedSectors.reduce((acc, s) => acc + (s.walls?.reduce((wAcc, w) => wAcc + (w.routes?.length || 0), 0) || 0), 0),
+        highlights: targetDest.highlights?.includes(newSector.name) 
+          ? targetDest.highlights 
+          : [...(targetDest.highlights || []), newSector.name],
+      };
+
+      await this.saveCustomDestination(updatedDest);
+      return updatedDest;
+    } catch (e) {
+      console.warn('Erro ao adicionar setor ao destino:', e);
+      return null;
+    }
+  },
+
+  async addRouteToSector(
+    destId: string, 
+    sectorId: string, 
+    wallId: string, 
+    newRoute: Route,
+    baseDestination?: ClimbingDestination
+  ): Promise<ClimbingDestination | null> {
+    try {
+      const current = await this.getCustomDestinations();
+      let targetDest = current.find(d => d.id === destId);
+
+      if (!targetDest && baseDestination) {
+        targetDest = JSON.parse(JSON.stringify(baseDestination));
+      }
+
+      if (!targetDest) return null;
+
+      const updatedSectors = (targetDest.sectors || []).map(sec => {
+        if (sec.id !== sectorId) return sec;
+        const updatedWalls = (sec.walls || []).map(w => {
+          if (w.id !== wallId) return w;
+          const currentRoutes = w.routes || [];
+          return {
+            ...w,
+            routes: [...currentRoutes, newRoute],
+          };
+        });
+        return {
+          ...sec,
+          walls: updatedWalls,
+        };
+      });
+
+      const updatedDest: ClimbingDestination = {
+        ...targetDest,
+        sectors: updatedSectors,
+        hasBoulder: targetDest.hasBoulder || newRoute.style === 'boulder',
+        hasSport: targetDest.hasSport || newRoute.style === 'esportiva',
+        hasTrad: targetDest.hasTrad || newRoute.style === 'tradicional',
+        totalRoutes: updatedSectors.reduce((acc, s) => acc + (s.walls?.reduce((wAcc, w) => wAcc + (w.routes?.length || 0), 0) || 0), 0),
+      };
+
+      await this.saveCustomDestination(updatedDest);
+      return updatedDest;
+    } catch (e) {
+      console.warn('Erro ao adicionar via ao setor:', e);
+      return null;
+    }
   }
 };
+

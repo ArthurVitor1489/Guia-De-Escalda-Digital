@@ -10,6 +10,7 @@ import {
   Shield,
   Layers,
   Sparkles,
+  Box,
 } from 'lucide-react-native';
 import { ProtectionCategory, SunExposureInfo } from '../../types/climbing';
 
@@ -64,6 +65,13 @@ export const ProtectionBadge: React.FC<ProtectionBadgeProps> = ({ type, isProjec
         <View style={[styles.badgeBase, styles.badgeOrange]}>
           <Hammer size={12} color="#FFFFFF" />
           <Text style={styles.badgeTextWhite}>ARTIFICIAL</Text>
+        </View>
+      );
+    case 'crashpad':
+      return (
+        <View style={[styles.badgeBase, { backgroundColor: '#F59E0B' }]}>
+          <Box size={12} color="#000000" />
+          <Text style={styles.badgeTextBlack}>CRASHPAD</Text>
         </View>
       );
     default:

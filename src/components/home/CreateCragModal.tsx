@@ -43,7 +43,11 @@ import {
 interface CreateCragModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (newDestination: ClimbingDestination) => void;
+  onSave?: (newDestination: ClimbingDestination) => void;
+  onSaveCrag?: (destinationId: string, newSector: Sector, baseDestination?: ClimbingDestination) => void;
+  destinations?: ClimbingDestination[];
+  defaultDestinationId?: string;
+  onOpenCreateCity?: () => void;
 }
 
 // Exemplos de rochas do Nordeste para escolha rápida
@@ -70,13 +74,40 @@ export const CreateCragModal: React.FC<CreateCragModalProps> = ({
   visible,
   onClose,
   onSave,
+  onSaveCrag,
+  destinations = [],
+  defaultDestinationId,
+  onOpenCreateCity,
 }) => {
+  // Cidade pertencente
+  const [selectedDestinationId, setSelectedDestinationId] = useState<string>(
+    defaultDestinationId || (destinations.length > 0 ? destinations[0].id : '')
+  );
+
   // Informações da Pedra / Polo
   const [cragName, setCragName] = useState('');
   const [cityName, setCityName] = useState('');
   const [stateName, setStateName] = useState('PB');
   const [regionName, setRegionName] = useState('Agreste / Sertão');
   const [description, setDescription] = useState('');
+
+  // Sincroniza cidade quando abrir ou mudar default
+  React.useEffect(() => {
+    if (defaultDestinationId) {
+      setSelectedDestinationId(defaultDestinationId);
+      const target = destinations.find(d => d.id === defaultDestinationId);
+      if (target) {
+        setCityName(target.name);
+        setStateName(target.state);
+        setRegionName(target.regionName);
+      }
+    } else if (destinations.length > 0 && !selectedDestinationId) {
+      setSelectedDestinationId(destinations[0].id);
+      setCityName(destinations[0].name);
+      setStateName(destinations[0].state);
+      setRegionName(destinations[0].regionName);
+    }
+  }, [defaultDestinationId, destinations, visible]);
 
   // Localização & GPS
   const [latitude, setLatitude] = useState('-7.2280');
@@ -98,6 +129,7 @@ export const CreateCragModal: React.FC<CreateCragModalProps> = ({
 
   // Trilha & Acesso
   const [approachMinutes, setApproachMinutes] = useState('15');
+
   const [approachTrail, setApproachTrail] = useState('');
 
   // Primeira Via da Pedra
@@ -215,14 +247,15 @@ export const CreateCragModal: React.FC<CreateCragModalProps> = ({
   };
 
   const handleSave = () => {
-    if (!cragName.trim() || !cityName.trim()) {
+    if (!cragName.trim()) {
       if (Platform.OS === 'web') {
-        window.alert('Por favor, informe pelo menos o nome da pedra e a cidade.');
+        window.alert('Por favor, informe o nome da pedra.');
+      } else {
+        Alert.alert('Campo Obrigatório', 'Informe o nome da pedra / falésia.');
       }
       return;
     }
 
-    const destId = `custom-dest-${Date.now()}`;
     const sectorId = `custom-sec-${Date.now()}`;
     const wallId = `custom-wall-${Date.now()}`;
     const routeId = `custom-route-${Date.now()}`;
@@ -278,14 +311,14 @@ export const CreateCragModal: React.FC<CreateCragModalProps> = ({
       routes: initialRoutes,
     };
 
-    // Cria o Setor
+    // Cria o Setor (Pedra / Falésia)
     const newSector: Sector = {
       id: sectorId,
       name: cragName.trim(),
       cragName: cragName.trim(),
       region: regionName.trim() || 'Agreste / Paraíba',
-      city: cityName.trim(),
-      state: stateName.trim().toUpperCase(),
+      city: cityName.trim() || 'Campina Grande',
+      state: stateName.trim().toUpperCase() || 'PB',
       coordinates: {
         latitude: parseFloat(latitude) || -7.228,
         longitude: parseFloat(longitude) || -35.889,
@@ -299,29 +332,35 @@ export const CreateCragModal: React.FC<CreateCragModalProps> = ({
       walls: [newWall],
     };
 
-    // Cria o Destino / Polo
-    const newDestination: ClimbingDestination = {
-      id: destId,
-      name: `${cragName.trim()} (${cityName.trim()})`,
-      state: stateName.trim().toUpperCase(),
-      regionName: regionName.trim() || `${cityName.trim()} - ${stateName.trim().toUpperCase()}`,
-      coverImage: photoUrl.trim(),
-      description:
-        description.trim() ||
-        `Novo setor de escalada cadastrado em campo por escaladores locais em ${cityName.trim()} - ${stateName.trim().toUpperCase()}.`,
-      rockType: rockType.charAt(0).toUpperCase() + rockType.slice(1),
-      totalRoutes: initialRoutes.length,
-      totalSectors: 1,
-      has3D: false,
-      hasTrad: protectionType === 'movel' || protectionType === 'mista',
-      hasSport: protectionType === 'chapeleta' || protectionType === 'grampo',
-      hasBoulder: false,
-      highlights: [cragName.trim(), `${heightMeters}m de altura`, rockType],
-      distanceFromCapital: `Localizado em ${cityName.trim()} - ${stateName.trim().toUpperCase()}`,
-      sectors: [newSector],
-    };
+    // Se temos um destino selecionado e callback onSaveCrag, salva na cidade escolhida!
+    const targetDest = destinations.find(d => d.id === selectedDestinationId);
+    if (selectedDestinationId && onSaveCrag) {
+      onSaveCrag(selectedDestinationId, newSector, targetDest);
+    } else if (onSave) {
+      const destId = `custom-dest-${Date.now()}`;
+      const newDestination: ClimbingDestination = {
+        id: destId,
+        name: `${cragName.trim()} (${cityName.trim()})`,
+        state: stateName.trim().toUpperCase(),
+        regionName: regionName.trim() || `${cityName.trim()} - ${stateName.trim().toUpperCase()}`,
+        coverImage: photoUrl.trim(),
+        description:
+          description.trim() ||
+          `Novo setor de escalada cadastrado em campo por escaladores locais em ${cityName.trim()} - ${stateName.trim().toUpperCase()}.`,
+        rockType: rockType.charAt(0).toUpperCase() + rockType.slice(1),
+        totalRoutes: initialRoutes.length,
+        totalSectors: 1,
+        has3D: false,
+        hasTrad: protectionType === 'movel' || protectionType === 'mista',
+        hasSport: protectionType === 'chapeleta' || protectionType === 'grampo',
+        hasBoulder: false,
+        highlights: [cragName.trim(), `${heightMeters}m de altura`, rockType],
+        distanceFromCapital: `Localizado em ${cityName.trim()} - ${stateName.trim().toUpperCase()}`,
+        sectors: [newSector],
+      };
+      onSave(newDestination);
+    }
 
-    onSave(newDestination);
     onClose();
   };
 
@@ -337,9 +376,13 @@ export const CreateCragModal: React.FC<CreateCragModalProps> = ({
           {/* Cabeçalho */}
           <View style={styles.header}>
             <View>
+              <View style={styles.levelBadge}>
+                <Mountain size={12} color="#10B981" />
+                <Text style={styles.levelBadgeText}>NÍVEL 2 • PEDRA / FALÉSIA</Text>
+              </View>
               <Text style={styles.title}>Cadastrar Nova Pedra</Text>
               <Text style={styles.subtitle}>
-                Registre um novo ponto de escalada diretamente do campo com foto
+                Registre uma pedra/falésia dentro da cidade selecionada
               </Text>
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
@@ -348,13 +391,63 @@ export const CreateCragModal: React.FC<CreateCragModalProps> = ({
           </View>
 
           <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
+            {/* Seletor de Cidade / Polo */}
+            <View style={styles.fieldGroup}>
+              <View style={styles.citySelectorHeaderRow}>
+                <Text style={styles.label}>CIDADE / POLO DA PEDRA *</Text>
+                {onOpenCreateCity && (
+                  <TouchableOpacity
+                    style={styles.newCityMiniBtn}
+                    onPress={() => {
+                      onClose();
+                      onOpenCreateCity();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Plus size={12} color="#10B981" />
+                    <Text style={styles.newCityMiniBtnText}>+ Nova Cidade</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {destinations && destinations.length > 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.cityChipsScroll}
+                >
+                  {destinations.map(d => {
+                    const isSelected = selectedDestinationId === d.id;
+                    return (
+                      <TouchableOpacity
+                        key={d.id}
+                        style={[styles.cityChip, isSelected && styles.cityChipActive]}
+                        onPress={() => {
+                          setSelectedDestinationId(d.id);
+                          setCityName(d.name);
+                          setStateName(d.state);
+                          setRegionName(d.regionName);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <MapPin size={12} color={isSelected ? '#10B981' : '#94A3B8'} />
+                        <Text style={[styles.cityChipText, isSelected && styles.cityChipTextActive]}>
+                          {d.name} ({d.state})
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              )}
+            </View>
+
             {/* 1. IDENTIFICAÇÃO BÁSICA */}
-            <Text style={styles.sectionHeader}>1. IDENTIFICAÇÃO DO LOCAL</Text>
+            <Text style={styles.sectionHeader}>1. IDENTIFICAÇÃO DA PEDRA</Text>
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>Nome da Pedra / Falésia *</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Ex: Pedra da Santa, Falésia do Riacho, Bloco do Urubu"
+                placeholder="Ex: Pedra Escola, Morcego, Vitaminas, A Rampa..."
                 placeholderTextColor="#64748B"
                 value={cragName}
                 onChangeText={setCragName}
@@ -363,7 +456,7 @@ export const CreateCragModal: React.FC<CreateCragModalProps> = ({
 
             <View style={styles.rowTwoCols}>
               <View style={[styles.fieldGroup, { flex: 2 }]}>
-                <Text style={styles.label}>Cidade *</Text>
+                <Text style={styles.label}>Cidade</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="Ex: Campina Grande, Sousa, Remígio"
@@ -374,7 +467,7 @@ export const CreateCragModal: React.FC<CreateCragModalProps> = ({
               </View>
 
               <View style={[styles.fieldGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Estado *</Text>
+                <Text style={styles.label}>Estado</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="PB, RN, etc."
@@ -963,4 +1056,70 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 0.5,
   },
+  levelBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  levelBadgeText: {
+    color: '#10B981',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  citySelectorHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  newCityMiniBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderRadius: 6,
+  },
+  newCityMiniBtnText: {
+    color: '#10B981',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  cityChipsScroll: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  cityChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  cityChipActive: {
+    borderColor: '#10B981',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+  },
+  cityChipText: {
+    color: '#94A3B8',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  cityChipTextActive: {
+    color: '#10B981',
+    fontWeight: '700',
+  },
 });
+

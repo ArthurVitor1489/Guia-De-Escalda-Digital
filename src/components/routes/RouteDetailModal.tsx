@@ -71,7 +71,9 @@ export const RouteDetailModal: React.FC<RouteDetailModalProps> = ({
             <View style={styles.headerTitleGroup}>
               <View style={styles.badgeRow}>
                 <View style={styles.orderBadge}>
-                  <Text style={styles.orderBadgeText}>Via #{route.orderIndex}</Text>
+                  <Text style={styles.orderBadgeText}>
+                    {route.style === 'boulder' ? `Boulder #${route.orderIndex}` : `Via #${route.orderIndex}`}
+                  </Text>
                 </View>
                 <ProtectionBadge type={route.protectionType} isProject={route.isProject} />
               </View>
@@ -90,17 +92,31 @@ export const RouteDetailModal: React.FC<RouteDetailModalProps> = ({
             </View>
 
             <View style={styles.gradeConversions}>
-              <Text style={styles.gradeEquivText}>
-                BR: <Text style={styles.gradeHighlight}>{route.grade.brazilian}</Text>
-              </Text>
-              <Text style={styles.gradeDivider}>•</Text>
-              <Text style={styles.gradeEquivText}>
-                FR: <Text style={styles.gradeHighlight}>{route.grade.french}</Text>
-              </Text>
-              <Text style={styles.gradeDivider}>•</Text>
-              <Text style={styles.gradeEquivText}>
-                YDS: <Text style={styles.gradeHighlight}>{route.grade.yds}</Text>
-              </Text>
+              {route.style === 'boulder' ? (
+                <>
+                  <Text style={styles.gradeEquivText}>
+                    V-SCALE: <Text style={styles.gradeHighlight}>{route.grade.brazilian}</Text>
+                  </Text>
+                  <Text style={styles.gradeDivider}>•</Text>
+                  <Text style={styles.gradeEquivText}>
+                    FONT: <Text style={styles.gradeHighlight}>{route.grade.french}</Text>
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.gradeEquivText}>
+                    BR: <Text style={styles.gradeHighlight}>{route.grade.brazilian}</Text>
+                  </Text>
+                  <Text style={styles.gradeDivider}>•</Text>
+                  <Text style={styles.gradeEquivText}>
+                    FR: <Text style={styles.gradeHighlight}>{route.grade.french}</Text>
+                  </Text>
+                  <Text style={styles.gradeDivider}>•</Text>
+                  <Text style={styles.gradeEquivText}>
+                    YDS: <Text style={styles.gradeHighlight}>{route.grade.yds}</Text>
+                  </Text>
+                </>
+              )}
             </View>
           </View>
 
@@ -117,14 +133,16 @@ export const RouteDetailModal: React.FC<RouteDetailModalProps> = ({
               <View style={styles.metricItem}>
                 <Shield size={16} color="#10B981" />
                 <Text style={styles.metricLabel}>Proteções</Text>
-                <Text style={styles.metricValue}>{route.boltsCount} chapeletas</Text>
+                <Text style={styles.metricValue}>
+                  {route.style === 'boulder' ? 'Crash Pad' : `${route.boltsCount} chapeletas`}
+                </Text>
               </View>
 
               <View style={styles.metricItem}>
                 <Anchor size={16} color="#F59E0B" />
                 <Text style={styles.metricLabel}>Parada</Text>
                 <Text style={styles.metricValue}>
-                  {route.anchorType.replace(/_/g, ' ')}
+                  {route.style === 'boulder' ? 'Topo do bloco' : route.anchorType.replace(/_/g, ' ')}
                 </Text>
               </View>
             </View>

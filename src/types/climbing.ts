@@ -87,7 +87,8 @@ export type ProtectionCategory =
   | 'grampo' 
   | 'movel' 
   | 'mista' 
-  | 'artificial';
+  | 'artificial'
+  | 'crashpad';
 
 export interface SunExposureInfo {
   morning: 'sol' | 'sombra';

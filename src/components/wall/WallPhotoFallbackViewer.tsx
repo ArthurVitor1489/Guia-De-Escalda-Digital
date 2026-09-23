@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Route, Wall } from '../../types/climbing';
 import { Camera, ChevronRight } from 'lucide-react-native';
+import { getGradeBadgeColor } from '../../services/gradeConverter';
 
 interface WallPhotoFallbackViewerProps {
   wall: Wall;
@@ -79,14 +80,16 @@ export const WallPhotoFallbackViewer: React.FC<WallPhotoFallbackViewerProps> = (
                       {r.name}
                     </Text>
                     <Text style={styles.routeMeta}>
-                      {r.heightMeters}m • {r.boltsCount} proteções • {r.style}
+                      {r.heightMeters}m • {r.style === 'boulder' ? 'crash pad' : `${r.boltsCount} proteções`} • {r.style}
                     </Text>
                   </View>
                 </View>
 
                 <View style={styles.routeItemRight}>
-                  <Text style={styles.gradeBadge}>
-                    {preferredGradeSystem === 'brazilian' ? r.grade.brazilian : r.grade.french}
+                  <Text style={[styles.gradeBadge, { backgroundColor: getGradeBadgeColor(r.grade.brazilian) }]}>
+                    {r.style === 'boulder'
+                      ? r.grade.brazilian
+                      : (preferredGradeSystem === 'brazilian' ? r.grade.brazilian : r.grade.french)}
                     {r.grade.danger ? ` ${r.grade.danger}` : ''}
                   </Text>
                   <ChevronRight size={16} color="#94A3B8" />

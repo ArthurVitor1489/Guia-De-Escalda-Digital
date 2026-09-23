@@ -24,7 +24,9 @@ import { MOCK_SECTORS, CLIMBING_DESTINATIONS } from './src/services/mockData';
 import { StorageService } from './src/services/storageService';
 import { CommunityService, DEFAULT_USER } from './src/services/communityService';
 import { HomeScreen } from './src/components/home/HomeScreen';
+import { CreateCityModal } from './src/components/home/CreateCityModal';
 import { CreateCragModal } from './src/components/home/CreateCragModal';
+import { CreateRouteModal } from './src/components/routes/CreateRouteModal';
 import { WallVisualContainer } from './src/components/wall/WallVisualContainer';
 import { RouteDetailModal } from './src/components/routes/RouteDetailModal';
 import { LogAscentModal } from './src/components/logbook/LogAscentModal';
@@ -57,7 +59,9 @@ export default function App() {
   const [logbookRoute, setLogbookRoute] = useState<Route | null>(null);
   const [photoTargetRoute, setPhotoTargetRoute] = useState<Route | null>(null);
   const [showApproachModal, setShowApproachModal] = useState(false);
+  const [showCreateCityModal, setShowCreateCityModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateRouteModal, setShowCreateRouteModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showPostPhotoModal, setShowPostPhotoModal] = useState(false);
   const [currentTab, setCurrentTab] = useState<'home' | 'guide' | 'logbook' | 'profile'>('home');
@@ -119,15 +123,81 @@ export default function App() {
     }
   };
 
-  // Salva uma nova pedra / destino cadastrado em campo
-  const handleSaveCustomCrag = async (newDest: ClimbingDestination) => {
-    await StorageService.saveCustomDestination(newDest);
-    setDestinations(prev => [newDest, ...prev.filter(d => d.id !== newDest.id)]);
-    setSelectedDestination(newDest);
+  // NÍVEL 1: Salva uma nova cidade / polo cadastrado
+  const handleSaveCity = async (newCity: ClimbingDestination) => {
+    await StorageService.saveCustomDestination(newCity);
+    setDestinations(prev => [newCity, ...prev.filter(d => d.id !== newCity.id)]);
+    setSelectedDestination(newCity);
     setActiveSectorIndex(0);
     setActiveWallIndex(0);
     setSelectedRoute(null);
     setCurrentTab('guide');
+  };
+
+  // NÍVEL 2: Salva uma nova pedra / falésia dentro de uma cidade
+  const handleSaveSector = async (
+    destId: string,
+    newSector: Sector,
+    baseDestination?: ClimbingDestination
+  ) => {
+    const targetDest = baseDestination || destinations.find(d => d.id === destId) || selectedDestination;
+    const updatedDest = await StorageService.addSectorToDestination(destId, newSector, targetDest);
+
+    if (updatedDest) {
+      setDestinations(prev => {
+        const exists = prev.some(d => d.id === updatedDest.id);
+        if (exists) {
+          return prev.map(d => (d.id === updatedDest.id ? updatedDest : d));
+        }
+        return [updatedDest, ...prev];
+      });
+      setSelectedDestination(updatedDest);
+      setActiveSectorIndex(updatedDest.sectors.length - 1);
+      setActiveWallIndex(0);
+      setSelectedRoute(null);
+    }
+    setCurrentTab('guide');
+  };
+
+  // NÍVEL 3: Salva uma nova via ou boulder dentro da pedra ativa
+  const handleSaveRoute = async (newRoute: Route) => {
+    const updatedDest = await StorageService.addRouteToSector(
+      selectedDestination.id,
+      currentSector.id,
+      currentWall.id,
+      newRoute,
+      selectedDestination
+    );
+
+    if (updatedDest) {
+      setDestinations(prev => prev.map(d => (d.id === updatedDest.id ? updatedDest : d)));
+      setSelectedDestination(updatedDest);
+    } else {
+      // Atualização imediata local em memória
+      const updatedSectors = currentSectors.map((sec, sIdx) => {
+        if (sIdx !== activeSectorIndex) return sec;
+        const updatedWalls = sec.walls.map((wall, wIdx) => {
+          if (wIdx !== activeWallIndex) return wall;
+          return {
+            ...wall,
+            routes: [...wall.routes, newRoute],
+          };
+        });
+        return { ...sec, walls: updatedWalls };
+      });
+      const updatedDestLocal = {
+        ...selectedDestination,
+        sectors: updatedSectors,
+        totalRoutes: (selectedDestination.totalRoutes || 0) + 1,
+        hasBoulder: selectedDestination.hasBoulder || newRoute.style === 'boulder',
+        hasSport: selectedDestination.hasSport || newRoute.style === 'esportiva',
+        hasTrad: selectedDestination.hasTrad || newRoute.style === 'tradicional',
+      };
+      setDestinations(prev => prev.map(d => (d.id === updatedDestLocal.id ? updatedDestLocal : d)));
+      setSelectedDestination(updatedDestLocal);
+    }
+
+    setSelectedRoute(newRoute);
   };
 
   // Seleciona um destino a partir da Tela Inicial
@@ -164,13 +234,31 @@ export default function App() {
     setShowPostPhotoModal(true);
   };
 
-  // Abre cadastro de pedra em campo (exige login)
+  // Abre cadastro de cidade (Nível 1)
+  const handleOpenCreateCity = () => {
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
+    setShowCreateCityModal(true);
+  };
+
+  // Abre cadastro de pedra em campo (Nível 2)
   const handleOpenCreateCrag = () => {
     if (!currentUser) {
       setShowAuthModal(true);
       return;
     }
     setShowCreateModal(true);
+  };
+
+  // Abre cadastro de via ou boulder (Nível 3)
+  const handleOpenCreateRoute = () => {
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
+    setShowCreateRouteModal(true);
   };
 
   return (
@@ -235,6 +323,7 @@ export default function App() {
         <HomeScreen
           destinations={destinations}
           onSelectDestination={handleSelectDestination}
+          onOpenCreateCity={handleOpenCreateCity}
           onOpenCreateCrag={handleOpenCreateCrag}
         />
       ) : currentTab === 'logbook' ? (
@@ -330,12 +419,41 @@ export default function App() {
                     {sec.name}
                   </Text>
                   <Text style={styles.sectorTabSub}>
-                    {sec.walls[0]?.routes.length || 0} vias cadastradas
+                    {sec.walls[0]?.routes?.length || 0} vias cadastradas
                   </Text>
                 </TouchableOpacity>
               );
             })}
+
+            {/* Botão Adicionar Nova Pedra nesta Cidade */}
+            <TouchableOpacity
+              style={styles.addSectorTabBtn}
+              onPress={handleOpenCreateCrag}
+              activeOpacity={0.8}
+            >
+              <Plus size={14} color="#10B981" />
+              <Text style={styles.addSectorTabBtnText}>+ Nova Pedra</Text>
+            </TouchableOpacity>
           </ScrollView>
+
+          {/* Barra de Ação da Parede / Setor: Cadastrar Via ou Boulder */}
+          <View style={styles.routeActionBar}>
+            <View style={styles.routeActionInfo}>
+              <Text style={styles.routeActionTitle}>Vias & Boulders da {currentSector.name}</Text>
+              <Text style={styles.routeActionSub}>
+                {currentWall?.routes?.length || 0} vias e blocos cadastrados nesta face
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.createRouteBtn}
+              onPress={handleOpenCreateRoute}
+              activeOpacity={0.8}
+            >
+              <Plus size={14} color="#0F172A" />
+              <Text style={styles.createRouteBtnText}>+ VIA / BOULDER</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Componente Central da Parede (Orquestrador 3D -> 2D -> Foto) */}
           <WallVisualContainer
@@ -415,11 +533,32 @@ export default function App() {
         onClose={() => setShowApproachModal(false)}
       />
 
-      {/* Modal de Cadastro Manual de Pedra / Falésia em Campo */}
+      {/* NÍVEL 1: Modal de Cadastro de Nova Cidade / Polo */}
+      <CreateCityModal
+        visible={showCreateCityModal}
+        onClose={() => setShowCreateCityModal(false)}
+        onSave={handleSaveCity}
+      />
+
+      {/* NÍVEL 2: Modal de Cadastro de Nova Pedra / Falésia */}
       <CreateCragModal
         visible={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onSave={handleSaveCustomCrag}
+        destinations={destinations}
+        defaultDestinationId={selectedDestination?.id}
+        onSaveCrag={handleSaveSector}
+        onOpenCreateCity={handleOpenCreateCity}
+      />
+
+      {/* NÍVEL 3: Modal de Cadastro de Nova Via ou Boulder */}
+      <CreateRouteModal
+        visible={showCreateRouteModal}
+        onClose={() => setShowCreateRouteModal(false)}
+        destinationName={selectedDestination.name}
+        sectorName={currentSector.name}
+        wallName={currentWall?.name}
+        existingRoutesCount={currentWall?.routes?.length || 0}
+        onSaveRoute={handleSaveRoute}
       />
 
       {/* Modal de Publicação de Foto na Comunidade */}
@@ -667,6 +806,65 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontSize: 11,
     marginTop: 2,
+  },
+  addSectorTabBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#10B981',
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    minHeight: 65,
+  },
+  addSectorTabBtnText: {
+    color: '#10B981',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  routeActionBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#1E293B',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  routeActionInfo: {
+    flex: 1,
+  },
+  routeActionTitle: {
+    color: '#F8FAFC',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  routeActionSub: {
+    color: '#94A3B8',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  createRouteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#10B981',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  createRouteBtnText: {
+    color: '#0F172A',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
   bottomBar: {
     flexDirection: 'row',
