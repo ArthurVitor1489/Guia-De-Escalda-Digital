@@ -8,10 +8,20 @@ import {
   StatusBar,
   ScrollView,
   TouchableOpacity,
+  Image,
 } from 'react-native';
-import { Sector, Wall, Route, AscentLog, ClimbingDestination } from './src/types/climbing';
+import {
+  Sector,
+  Wall,
+  Route,
+  AscentLog,
+  ClimbingDestination,
+  UserProfile,
+  CommunityPhoto,
+} from './src/types/climbing';
 import { MOCK_SECTORS, CLIMBING_DESTINATIONS } from './src/services/mockData';
 import { StorageService } from './src/services/storageService';
+import { CommunityService, DEFAULT_USER } from './src/services/communityService';
 import { HomeScreen } from './src/components/home/HomeScreen';
 import { CreateCragModal } from './src/components/home/CreateCragModal';
 import { WallVisualContainer } from './src/components/wall/WallVisualContainer';
@@ -19,6 +29,9 @@ import { RouteDetailModal } from './src/components/routes/RouteDetailModal';
 import { LogAscentModal } from './src/components/logbook/LogAscentModal';
 import { SectorApproachModal } from './src/components/common/SectorApproachModal';
 import { LogbookScreen } from './src/components/logbook/LogbookScreen';
+import { UserProfileScreen } from './src/components/profile/UserProfileScreen';
+import { AuthModal } from './src/components/auth/AuthModal';
+import { PostPhotoModal } from './src/components/community/PostPhotoModal';
 import {
   Mountain,
   Compass,
@@ -28,6 +41,9 @@ import {
   ArrowLeft,
   Map,
   Plus,
+  User,
+  Users,
+  Camera,
 } from 'lucide-react-native';
 
 export default function App() {
@@ -37,18 +53,23 @@ export default function App() {
   const [activeWallIndex, setActiveWallIndex] = useState(0);
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [logbookRoute, setLogbookRoute] = useState<Route | null>(null);
+  const [photoTargetRoute, setPhotoTargetRoute] = useState<Route | null>(null);
   const [showApproachModal, setShowApproachModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [currentTab, setCurrentTab] = useState<'home' | 'guide' | 'logbook'>('home');
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showPostPhotoModal, setShowPostPhotoModal] = useState(false);
+  const [currentTab, setCurrentTab] = useState<'home' | 'guide' | 'logbook' | 'profile'>('home');
   const [gradeSystem, setGradeSystem] = useState<'brazilian' | 'french' | 'yds'>('brazilian');
   const [logs, setLogs] = useState<AscentLog[]>([]);
+  const [currentUser, setCurrentUser] = useState<UserProfile>(DEFAULT_USER);
+  const [communityPhotos, setCommunityPhotos] = useState<CommunityPhoto[]>([]);
 
   // Setores do destino atualmente selecionado
   const currentSectors = selectedDestination.sectors || MOCK_SECTORS;
   const currentSector = currentSectors[activeSectorIndex] || currentSectors[0];
   const currentWall = currentSector.walls[activeWallIndex] || currentSector.walls[0];
 
-  // Carrega preferências, destinos customizados e diário de escalada ao iniciar
+  // Carrega preferências, usuário, fotos da comunidade e dados ao iniciar
   useEffect(() => {
     async function loadInitialData() {
       const savedLogs = await StorageService.getLogbook();
@@ -59,6 +80,10 @@ export default function App() {
       if (customDests && customDests.length > 0) {
         setDestinations([...customDests, ...CLIMBING_DESTINATIONS]);
       }
+      const user = await CommunityService.getCurrentUser();
+      setCurrentUser(user);
+      const photos = await CommunityService.getCommunityPhotos();
+      setCommunityPhotos(photos);
     }
     loadInitialData();
   }, []);
@@ -80,6 +105,14 @@ export default function App() {
   const handleSaveAscent = async (ascentData: any) => {
     const newLog = await StorageService.addAscent(ascentData);
     setLogs(prev => [newLog, ...prev]);
+
+    // Atualiza contagem no perfil do usuário
+    const updated = {
+      ...currentUser,
+      totalAscentsCount: (currentUser.totalAscentsCount || 0) + 1,
+    };
+    await CommunityService.updateProfile(updated);
+    setCurrentUser(updated);
   };
 
   // Salva uma nova pedra / destino cadastrado em campo
@@ -100,6 +133,25 @@ export default function App() {
     setActiveWallIndex(0);
     setSelectedRoute(null);
     setCurrentTab('guide');
+  };
+
+  // Salva uma nova foto postada na comunidade
+  const handleSavePhoto = async (photoData: any) => {
+    const newPhoto = await CommunityService.addCommunityPhoto(photoData);
+    setCommunityPhotos(prev => [newPhoto, ...prev]);
+    const updatedUser = await CommunityService.getCurrentUser();
+    setCurrentUser(updatedUser);
+  };
+
+  // Troca ou registro de usuário
+  const handleUserChanged = (newUser: UserProfile) => {
+    setCurrentUser(newUser);
+  };
+
+  // Abre modal de postagem de foto
+  const handleOpenPostPhoto = (route?: Route) => {
+    setPhotoTargetRoute(route || null);
+    setShowPostPhotoModal(true);
   };
 
   return (
@@ -134,22 +186,21 @@ export default function App() {
             </Text>
           </TouchableOpacity>
 
-          {/* Botão de Diário de Cadenas com Badge */}
+          {/* Mini Perfil do Usuário / Comunidade */}
           <TouchableOpacity
-            style={[styles.navIconBtn, currentTab === 'logbook' && styles.navIconBtnActive]}
-            onPress={() => setCurrentTab(currentTab === 'logbook' ? 'home' : 'logbook')}
+            style={[styles.userNavbarBtn, currentTab === 'profile' && styles.userNavbarBtnActive]}
+            onPress={() => setCurrentTab('profile')}
+            activeOpacity={0.8}
           >
-            <Award size={18} color={currentTab === 'logbook' ? '#10B981' : '#E2E8F0'} />
-            {logs.length > 0 && (
-              <View style={styles.logCountBadge}>
-                <Text style={styles.logCountText}>{logs.length}</Text>
-              </View>
-            )}
+            <Image source={{ uri: currentUser.avatarUrl }} style={styles.userNavbarAvatar} />
+            <Text style={styles.userNavbarName} numberOfLines={1}>
+              {currentUser.name.split(' ')[0]}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Conteúdo Principal: Home, Guia da Falésia ou Logbook */}
+      {/* Conteúdo Principal: Home, Guia da Falésia, Logbook ou Perfil */}
       {currentTab === 'home' ? (
         <HomeScreen
           destinations={destinations}
@@ -158,6 +209,16 @@ export default function App() {
         />
       ) : currentTab === 'logbook' ? (
         <LogbookScreen logs={logs} onClose={() => setCurrentTab('home')} />
+      ) : currentTab === 'profile' ? (
+        <UserProfileScreen
+          user={currentUser}
+          logs={logs}
+          communityPhotos={communityPhotos}
+          customDestinations={destinations.filter(d => !CLIMBING_DESTINATIONS.some(c => c.id === d.id))}
+          onOpenAuthModal={() => setShowAuthModal(true)}
+          onOpenPostPhoto={() => handleOpenPostPhoto()}
+          onOpenCreateCrag={() => setShowCreateModal(true)}
+        />
       ) : (
         <ScrollView style={styles.scrollBody} showsVerticalScrollIndicator={false}>
           {/* Botão Voltar para Seleção de Cidades / Destinos */}
@@ -255,7 +316,7 @@ export default function App() {
         </ScrollView>
       )}
 
-      {/* Barra de Navegação Inferior Fixa */}
+      {/* Barra de Navegação Inferior Fixa (4 Abas) */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
           style={[styles.bottomBarItem, currentTab === 'home' && styles.bottomBarItemActive]}
@@ -273,7 +334,7 @@ export default function App() {
         >
           <Mountain size={20} color={currentTab === 'guide' ? '#10B981' : '#64748B'} />
           <Text style={[styles.bottomBarText, currentTab === 'guide' && styles.bottomBarTextActive]}>
-            Guia da Parede
+            Guia Parede
           </Text>
         </TouchableOpacity>
 
@@ -286,6 +347,16 @@ export default function App() {
             Meu Diário
           </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.bottomBarItem, currentTab === 'profile' && styles.bottomBarItemActive]}
+          onPress={() => setCurrentTab('profile')}
+        >
+          <User size={20} color={currentTab === 'profile' ? '#A855F7' : '#64748B'} />
+          <Text style={[styles.bottomBarText, currentTab === 'profile' && styles.bottomBarTextActive]}>
+            Meu Perfil
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Modais de Interação */}
@@ -294,6 +365,8 @@ export default function App() {
         onClose={() => setSelectedRoute(null)}
         onOpenLogbook={(route) => setLogbookRoute(route)}
         preferredGradeSystem={gradeSystem}
+        communityPhotos={communityPhotos}
+        onOpenPostPhoto={(route) => handleOpenPostPhoto(route)}
       />
 
       <LogAscentModal
@@ -316,6 +389,24 @@ export default function App() {
         visible={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSave={handleSaveCustomCrag}
+      />
+
+      {/* Modal de Publicação de Foto na Comunidade */}
+      <PostPhotoModal
+        visible={showPostPhotoModal}
+        onClose={() => setShowPostPhotoModal(false)}
+        currentUser={currentUser}
+        activeRoute={photoTargetRoute || selectedRoute}
+        activeWall={currentWall}
+        onSavePhoto={handleSavePhoto}
+      />
+
+      {/* Modal de Autenticação / Troca de Perfil de Escalador */}
+      <AuthModal
+        visible={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onUserChanged={handleUserChanged}
+        currentUser={currentUser}
       />
     </SafeAreaView>
   );
@@ -387,33 +478,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
-  navIconBtn: {
+  userNavbarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: '#1E293B',
-    padding: 8,
-    borderRadius: 8,
-    position: 'relative',
+    paddingLeft: 4,
+    paddingRight: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: '#334155',
   },
-  navIconBtnActive: {
-    backgroundColor: '#10B98122',
+  userNavbarBtnActive: {
+    borderColor: '#A855F7',
+    backgroundColor: 'rgba(168, 85, 247, 0.15)',
+  },
+  userNavbarAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
     borderColor: '#10B981',
   },
-  logCountBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: '#10B981',
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logCountText: {
-    color: '#0F172A',
-    fontSize: 9,
-    fontWeight: '900',
+  userNavbarName: {
+    color: '#F8FAFC',
+    fontSize: 12,
+    fontWeight: '700',
+    maxWidth: 70,
   },
   scrollBody: {
     flex: 1,
@@ -537,7 +629,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 3,
     paddingVertical: 4,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
   },
   bottomBarItemActive: {},
   bottomBarText: {

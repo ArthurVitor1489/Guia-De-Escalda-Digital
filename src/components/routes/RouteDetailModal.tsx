@@ -1,4 +1,4 @@
-// Modal de Detalhes da Via de Escalada com Histórico, Proteções e Logbook
+// Modal de Detalhes da Via de Escalada com Histórico, Proteções, Fotos da Comunidade e Logbook
 import React, { useState } from 'react';
 import {
   View,
@@ -7,8 +7,9 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
+  Image,
 } from 'react-native';
-import { Route } from '../../types/climbing';
+import { Route, CommunityPhoto } from '../../types/climbing';
 import {
   X,
   Shield,
@@ -20,6 +21,9 @@ import {
   Bookmark,
   Share2,
   Calendar,
+  Camera,
+  ImagePlus,
+  Heart,
 } from 'lucide-react-native';
 import { formatRouteGrade, getGradeBadgeColor, DANGER_EXPLANATIONS } from '../../services/gradeConverter';
 import { ProtectionBadge } from '../common/EENeBadge';
@@ -29,6 +33,8 @@ interface RouteDetailModalProps {
   onClose: () => void;
   onOpenLogbook: (route: Route) => void;
   preferredGradeSystem: 'brazilian' | 'french' | 'yds';
+  communityPhotos?: CommunityPhoto[];
+  onOpenPostPhoto?: (route: Route) => void;
 }
 
 export const RouteDetailModal: React.FC<RouteDetailModalProps> = ({
@@ -36,6 +42,8 @@ export const RouteDetailModal: React.FC<RouteDetailModalProps> = ({
   onClose,
   onOpenLogbook,
   preferredGradeSystem,
+  communityPhotos = [],
+  onOpenPostPhoto,
 }) => {
   const [isFavorited, setIsFavorited] = useState(false);
 
@@ -43,6 +51,7 @@ export const RouteDetailModal: React.FC<RouteDetailModalProps> = ({
 
   const gradeDisplay = formatRouteGrade(route, preferredGradeSystem);
   const badgeColor = getGradeBadgeColor(route.grade.brazilian);
+  const routePhotos = communityPhotos.filter(p => p.routeId === route.id);
   const dangerInfo = route.grade.danger ? DANGER_EXPLANATIONS[route.grade.danger] : null;
 
   return (
@@ -180,6 +189,70 @@ export const RouteDetailModal: React.FC<RouteDetailModalProps> = ({
                 )}
               </View>
             )}
+
+            {/* Seção Colaborativa: Fotos da Comunidade & Betas Visuais */}
+            <View style={styles.sectionBlock}>
+              <View style={styles.communityHeaderRow}>
+                <View>
+                  <Text style={styles.sectionTitle}>FOTOS DA COMUNIDADE ({routePhotos.length})</Text>
+                  <Text style={styles.communitySub}>Registros colaborativos de outros escaladores nesta via</Text>
+                </View>
+                {onOpenPostPhoto && (
+                  <TouchableOpacity
+                    style={styles.postPhotoMiniBtn}
+                    onPress={() => onOpenPostPhoto(route)}
+                    activeOpacity={0.8}
+                  >
+                    <Camera size={13} color="#10B981" />
+                    <Text style={styles.postPhotoMiniText}>+ Postar</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {routePhotos.length === 0 ? (
+                <View style={styles.emptyPhotosBox}>
+                  <Camera size={28} color="#475569" />
+                  <Text style={styles.emptyPhotosTitle}>Nenhuma foto desta via ainda</Text>
+                  <Text style={styles.emptyPhotosSub}>
+                    Seja o primeiro escalador a postar uma foto ou beta visual nesta via!
+                  </Text>
+                  {onOpenPostPhoto && (
+                    <TouchableOpacity
+                      style={styles.firstPhotoBtn}
+                      onPress={() => onOpenPostPhoto(route)}
+                      activeOpacity={0.8}
+                    >
+                      <ImagePlus size={14} color="#0F172A" />
+                      <Text style={styles.firstPhotoBtnText}>COMPARTILHAR PRIMEIRA FOTO</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.communityPhotosList}>
+                  {routePhotos.map((photo) => (
+                    <View key={photo.id} style={styles.communityPhotoItem}>
+                      <Image source={{ uri: photo.photoUrl }} style={styles.communityPhotoImg} />
+                      <View style={styles.communityPhotoOverlay}>
+                        <View style={styles.photoUserRow}>
+                          <Image source={{ uri: photo.userAvatar }} style={styles.photoUserAvatar} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.photoUserName}>{photo.userName}</Text>
+                            <Text style={styles.photoUserLocation}>{photo.userCity} • {photo.date}</Text>
+                          </View>
+                          <View style={styles.photoLikeBadge}>
+                            <Heart size={12} color="#EF4444" fill="#EF4444" />
+                            <Text style={styles.photoLikeCount}>{photo.likesCount}</Text>
+                          </View>
+                        </View>
+                        {photo.caption ? (
+                          <Text style={styles.photoCaptionText}>"{photo.caption}"</Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
           </ScrollView>
 
           {/* Rodapé com Ações */}
@@ -456,5 +529,127 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  communityHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  communitySub: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 1,
+  },
+  postPhotoMiniBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#10B981',
+  },
+  postPhotoMiniText: {
+    color: '#10B981',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  emptyPhotosBox: {
+    backgroundColor: '#1E293B',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  emptyPhotosTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#CBD5E1',
+    marginTop: 8,
+  },
+  emptyPhotosSub: {
+    fontSize: 11,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  firstPhotoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#10B981',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  firstPhotoBtnText: {
+    color: '#0F172A',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  communityPhotosList: {
+    gap: 12,
+  },
+  communityPhotoItem: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  communityPhotoImg: {
+    width: '100%',
+    height: 190,
+  },
+  communityPhotoOverlay: {
+    padding: 12,
+    backgroundColor: '#1E293B',
+  },
+  photoUserRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  photoUserAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#10B981',
+  },
+  photoUserName: {
+    color: '#F8FAFC',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  photoUserLocation: {
+    color: '#94A3B8',
+    fontSize: 10,
+  },
+  photoLikeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  photoLikeCount: {
+    color: '#EF4444',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  photoCaptionText: {
+    color: '#CBD5E1',
+    fontSize: 12,
+    lineHeight: 16,
+    fontStyle: 'italic',
   },
 });

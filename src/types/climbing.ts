@@ -244,3 +244,47 @@ export interface ClimbingDestination {
   highlights: string[];
   sectors: Sector[];
 }
+
+// Perfil do Escalador da Comunidade
+export interface UserProfile {
+  id: string;
+  name: string;
+  username: string; // Ex: "arthur_climb"
+  email: string;
+  city: string;
+  state: string;
+  avatarUrl: string;
+  bio: string;
+  hardestGrade: string; // Ex: "8a"
+  memberSince: string;
+  totalAscentsCount?: number;
+  totalPhotosCount?: number;
+}
+
+// Foto Colaborativa da Comunidade (Postada em uma via ou falésia)
+export interface CommunityPhoto {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  userCity: string;
+  routeId?: string;
+  routeName?: string;
+  wallId?: string;
+  wallName?: string;
+  photoUrl: string;
+  caption: string;
+  date: string;
+  likesCount: number;
+}
+
+// Dica / Beta Compartilhado pela Comunidade
+export interface CommunityBeta {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  routeId: string;
+  text: string;
+  date: string;
+}
