@@ -24,18 +24,22 @@ import {
   CheckCircle2,
   Sparkles,
   Mountain,
+  LogOut,
+  LogIn,
+  User,
 } from 'lucide-react-native';
 import { getGradeBadgeColor } from '../../services/gradeConverter';
 import { DEFAULT_USER } from '../../services/communityService';
 
 interface UserProfileScreenProps {
-  user: UserProfile;
+  user: UserProfile | null;
   logs: AscentLog[];
   communityPhotos: CommunityPhoto[];
   customDestinations: ClimbingDestination[];
   onOpenAuthModal: () => void;
   onOpenPostPhoto: () => void;
   onOpenCreateCrag: () => void;
+  onLogout?: () => void;
 }
 
 export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
@@ -61,6 +65,32 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
   const onsightCount = safeLogs.filter(l => l && l.style === 'onsight').length;
   const flashCount = safeLogs.filter(l => l && l.style === 'flash').length;
   const redpointCount = safeLogs.filter(l => l && l.style === 'redpoint').length;
+
+  // Se o usuário não estiver logado (modo visitante)
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.guestCard}>
+          <View style={styles.guestIconCircle}>
+            <User size={38} color="#10B981" />
+          </View>
+          <Text style={styles.guestTitle}>Nenhum escalador conectado</Text>
+          <Text style={styles.guestSubtitle}>
+            Entre com sua conta ou crie um perfil gratuito para registrar cadenas no seu diário, postar fotos de vias e falésias, e fazer parte da comunidade CRUX.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.guestLoginBtn}
+            onPress={onOpenAuthModal}
+            activeOpacity={0.8}
+          >
+            <LogIn size={18} color="#0F172A" />
+            <Text style={styles.guestLoginBtnText}>ENTRAR OU CRIAR CONTA</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -90,6 +120,17 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
               <Users size={14} color="#38BDF8" />
               <Text style={styles.switchUserText}>Trocar / Criar</Text>
             </TouchableOpacity>
+
+            {onLogout && (
+              <TouchableOpacity
+                style={styles.logoutBtn}
+                onPress={onLogout}
+                activeOpacity={0.8}
+              >
+                <LogOut size={14} color="#EF4444" />
+                <Text style={styles.logoutBtnText}>Sair</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -414,6 +455,73 @@ const styles = StyleSheet.create({
     color: '#38BDF8',
     fontSize: 12,
     fontWeight: '700',
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#EF4444',
+  },
+  logoutBtnText: {
+    color: '#EF4444',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  guestCard: {
+    backgroundColor: '#0F172A',
+    margin: 20,
+    padding: 24,
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#1E293B',
+  },
+  guestIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#1E293B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  guestTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  guestSubtitle: {
+    color: '#94A3B8',
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: 20,
+  },
+  guestLoginBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#10B981',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    width: '100%',
+  },
+  guestLoginBtnText: {
+    color: '#0F172A',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
   userName: {
     fontSize: 22,

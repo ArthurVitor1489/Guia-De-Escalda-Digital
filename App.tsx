@@ -9,6 +9,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Modal,
 } from 'react-native';
 import {
   Sector,
@@ -30,7 +31,7 @@ import { LogAscentModal } from './src/components/logbook/LogAscentModal';
 import { SectorApproachModal } from './src/components/common/SectorApproachModal';
 import { LogbookScreen } from './src/components/logbook/LogbookScreen';
 import { UserProfileScreen } from './src/components/profile/UserProfileScreen';
-import { AuthModal } from './src/components/auth/AuthModal';
+import { AuthScreen } from './src/components/auth/AuthScreen';
 import { PostPhotoModal } from './src/components/community/PostPhotoModal';
 import {
   Mountain,
@@ -44,6 +45,7 @@ import {
   User,
   Users,
   Camera,
+  LogIn,
 } from 'lucide-react-native';
 
 export default function App() {
@@ -61,7 +63,7 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<'home' | 'guide' | 'logbook' | 'profile'>('home');
   const [gradeSystem, setGradeSystem] = useState<'brazilian' | 'french' | 'yds'>('brazilian');
   const [logs, setLogs] = useState<AscentLog[]>([]);
-  const [currentUser, setCurrentUser] = useState<UserProfile>(DEFAULT_USER);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(DEFAULT_USER);
   const [communityPhotos, setCommunityPhotos] = useState<CommunityPhoto[]>([]);
 
   // Setores do destino atualmente selecionado
@@ -107,12 +109,14 @@ export default function App() {
     setLogs(prev => [newLog, ...prev]);
 
     // Atualiza contagem no perfil do usuário
-    const updated = {
-      ...currentUser,
-      totalAscentsCount: (currentUser.totalAscentsCount || 0) + 1,
-    };
-    await CommunityService.updateProfile(updated);
-    setCurrentUser(updated);
+    if (currentUser) {
+      const updated = {
+        ...currentUser,
+        totalAscentsCount: (currentUser.totalAscentsCount || 0) + 1,
+      };
+      await CommunityService.updateProfile(updated);
+      setCurrentUser(updated);
+    }
   };
 
   // Salva uma nova pedra / destino cadastrado em campo
@@ -143,15 +147,30 @@ export default function App() {
     setCurrentUser(updatedUser);
   };
 
-  // Troca ou registro de usuário
-  const handleUserChanged = (newUser: UserProfile) => {
-    setCurrentUser(newUser);
+  // Sair da Conta (Logout)
+  const handleLogout = async () => {
+    await CommunityService.logout();
+    setCurrentUser(null);
+    setShowAuthModal(true);
   };
 
-  // Abre modal de postagem de foto
+  // Abre modal de postagem de foto (exige login)
   const handleOpenPostPhoto = (route?: Route) => {
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
     setPhotoTargetRoute(route || null);
     setShowPostPhotoModal(true);
+  };
+
+  // Abre cadastro de pedra em campo (exige login)
+  const handleOpenCreateCrag = () => {
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
+    setShowCreateModal(true);
   };
 
   return (
@@ -186,17 +205,28 @@ export default function App() {
             </Text>
           </TouchableOpacity>
 
-          {/* Mini Perfil do Usuário / Comunidade */}
-          <TouchableOpacity
-            style={[styles.userNavbarBtn, currentTab === 'profile' && styles.userNavbarBtnActive]}
-            onPress={() => setCurrentTab('profile')}
-            activeOpacity={0.8}
-          >
-            <Image source={{ uri: currentUser.avatarUrl }} style={styles.userNavbarAvatar} />
-            <Text style={styles.userNavbarName} numberOfLines={1}>
-              {currentUser.name.split(' ')[0]}
-            </Text>
-          </TouchableOpacity>
+          {/* Mini Perfil do Usuário ou Botão Entrar */}
+          {currentUser ? (
+            <TouchableOpacity
+              style={[styles.userNavbarBtn, currentTab === 'profile' && styles.userNavbarBtnActive]}
+              onPress={() => setCurrentTab('profile')}
+              activeOpacity={0.8}
+            >
+              <Image source={{ uri: currentUser.avatarUrl }} style={styles.userNavbarAvatar} />
+              <Text style={styles.userNavbarName} numberOfLines={1}>
+                {currentUser.name.split(' ')[0]}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.loginNavbarBtn}
+              onPress={() => setShowAuthModal(true)}
+              activeOpacity={0.8}
+            >
+              <LogIn size={14} color="#0F172A" />
+              <Text style={styles.loginNavbarBtnText}>Entrar</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -205,7 +235,7 @@ export default function App() {
         <HomeScreen
           destinations={destinations}
           onSelectDestination={handleSelectDestination}
-          onOpenCreateCrag={() => setShowCreateModal(true)}
+          onOpenCreateCrag={handleOpenCreateCrag}
         />
       ) : currentTab === 'logbook' ? (
         <LogbookScreen logs={logs} onClose={() => setCurrentTab('home')} />
@@ -217,7 +247,8 @@ export default function App() {
           customDestinations={destinations.filter(d => !CLIMBING_DESTINATIONS.some(c => c.id === d.id))}
           onOpenAuthModal={() => setShowAuthModal(true)}
           onOpenPostPhoto={() => handleOpenPostPhoto()}
-          onOpenCreateCrag={() => setShowCreateModal(true)}
+          onOpenCreateCrag={handleOpenCreateCrag}
+          onLogout={handleLogout}
         />
       ) : (
         <ScrollView style={styles.scrollBody} showsVerticalScrollIndicator={false}>
@@ -395,19 +426,27 @@ export default function App() {
       <PostPhotoModal
         visible={showPostPhotoModal}
         onClose={() => setShowPostPhotoModal(false)}
-        currentUser={currentUser}
+        currentUser={currentUser || DEFAULT_USER}
         activeRoute={photoTargetRoute || selectedRoute}
         activeWall={currentWall}
         onSavePhoto={handleSavePhoto}
       />
 
-      {/* Modal de Autenticação / Troca de Perfil de Escalador */}
-      <AuthModal
+      {/* Modal / Tela de Autenticação, Login e Cadastro */}
+      <Modal
         visible={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onUserChanged={handleUserChanged}
-        currentUser={currentUser}
-      />
+        animationType="slide"
+        onRequestClose={() => setShowAuthModal(false)}
+      >
+        <AuthScreen
+          onSuccess={(user) => {
+            setCurrentUser(user);
+            setShowAuthModal(false);
+          }}
+          onContinueAsGuest={() => setShowAuthModal(false)}
+          onClose={() => setShowAuthModal(false)}
+        />
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -506,6 +545,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     maxWidth: 70,
+  },
+  loginNavbarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#10B981',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  loginNavbarBtnText: {
+    color: '#0F172A',
+    fontSize: 12,
+    fontWeight: '900',
   },
   scrollBody: {
     flex: 1,
