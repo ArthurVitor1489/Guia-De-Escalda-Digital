@@ -1,4 +1,4 @@
-// Modal para Postar Foto de Via ou Falésia para a Comunidade
+// Modal para Postar Foto de Via ou Falésia para a Comunidade com Upload Direto
 import React, { useState } from 'react';
 import {
   View,
@@ -10,9 +10,11 @@ import {
   Image,
   ScrollView,
   Platform,
+  Alert,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Route, Wall, UserProfile } from '../../types/climbing';
-import { X, Camera, ImagePlus, CheckCircle2, MessageSquare } from 'lucide-react-native';
+import { X, Camera, ImagePlus, CheckCircle2, MessageSquare, FolderUp } from 'lucide-react-native';
 
 interface PostPhotoModalProps {
   visible: boolean;
@@ -46,6 +48,7 @@ export const PostPhotoModal: React.FC<PostPhotoModalProps> = ({
     'https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=1200&q=80'
   );
   const [caption, setCaption] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   // Exemplos rápidos de fotos para teste
   const samplePhotos = [
@@ -54,6 +57,93 @@ export const PostPhotoModal: React.FC<PostPhotoModalProps> = ({
     'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80',
     'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
   ];
+
+  // Upload de imagem da galeria / arquivos do celular ou computador
+  const handlePickImage = async () => {
+    try {
+      setIsUploading(true);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset.base64) {
+          setPhotoUrl(`data:image/jpeg;base64,${asset.base64}`);
+        } else {
+          setPhotoUrl(asset.uri);
+        }
+      }
+    } catch (err) {
+      console.warn('Erro com ImagePicker, acionando fallback web:', err);
+      triggerWebFileInput();
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Capturar foto com a câmera do celular
+  const handleTakePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        if (Platform.OS === 'web') {
+          window.alert('Permissão de acesso à câmera não concedida no navegador.');
+        } else {
+          Alert.alert('Permissão necessária', 'Permita o acesso à câmera para fotografar a via.');
+        }
+        return;
+      }
+
+      setIsUploading(true);
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset.base64) {
+          setPhotoUrl(`data:image/jpeg;base64,${asset.base64}`);
+        } else {
+          setPhotoUrl(asset.uri);
+        }
+      }
+    } catch (err) {
+      console.warn('Erro ao abrir câmera, acionando fallback web:', err);
+      triggerWebFileInput();
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Fallback direto HTML input para navegadores web
+  const triggerWebFileInput = () => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (e: any) => {
+        const file = e.target?.files?.[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            if (event.target?.result) {
+              setPhotoUrl(event.target.result as string);
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+      input.click();
+    }
+  };
 
   const handlePost = () => {
     if (!photoUrl.trim()) return;
@@ -105,10 +195,39 @@ export const PostPhotoModal: React.FC<PostPhotoModalProps> = ({
             {/* Preview da Imagem */}
             <View style={styles.imagePreviewWrapper}>
               <Image source={{ uri: photoUrl }} style={styles.imagePreview} resizeMode="cover" />
+              <View style={styles.previewBadge}>
+                <CheckCircle2 size={12} color="#10B981" />
+                <Text style={styles.previewBadgeText}>PRONTA PARA PUBLICAR</Text>
+              </View>
+            </View>
+
+            {/* Botões de Upload e Câmera */}
+            <View style={styles.uploadRow}>
+              <TouchableOpacity
+                style={styles.uploadBtn}
+                onPress={handlePickImage}
+                activeOpacity={0.8}
+                disabled={isUploading}
+              >
+                <FolderUp size={16} color="#0F172A" />
+                <Text style={styles.uploadBtnText}>
+                  {isUploading ? 'CARREGANDO...' : 'ENVIAR FOTO DO DISPOSITIVO'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.cameraBtn}
+                onPress={handleTakePhoto}
+                activeOpacity={0.8}
+                disabled={isUploading}
+              >
+                <Camera size={16} color="#38BDF8" />
+                <Text style={styles.cameraBtnText}>CÂMERA</Text>
+              </TouchableOpacity>
             </View>
 
             {/* Opções de fotos de exemplo */}
-            <Text style={styles.label}>Escolha ou cole o link da foto:</Text>
+            <Text style={styles.label}>Ou selecione um exemplo rápido:</Text>
             <View style={styles.samplesRow}>
               {samplePhotos.map((url, idx) => (
                 <TouchableOpacity
@@ -123,7 +242,7 @@ export const PostPhotoModal: React.FC<PostPhotoModalProps> = ({
 
             {/* Campo URL personalizado */}
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>URL da Foto (ou câmera)</Text>
+              <Text style={styles.label}>Ou cole o link direto da foto</Text>
               <TextInput
                 style={styles.input}
                 value={photoUrl}
@@ -207,13 +326,71 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 12,
     overflow: 'hidden',
+    position: 'relative',
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#334155',
+    backgroundColor: '#1E293B',
   },
   imagePreview: {
     width: '100%',
     height: '100%',
+  },
+  previewBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#10B981',
+  },
+  previewBadgeText: {
+    color: '#F8FAFC',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  uploadRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+  uploadBtn: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#10B981',
+    paddingVertical: 11,
+    borderRadius: 10,
+  },
+  uploadBtnText: {
+    color: '#0F172A',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  cameraBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#1E293B',
+    paddingVertical: 11,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#38BDF8',
+  },
+  cameraBtnText: {
+    color: '#38BDF8',
+    fontSize: 12,
+    fontWeight: '800',
   },
   label: {
     color: '#CBD5E1',
