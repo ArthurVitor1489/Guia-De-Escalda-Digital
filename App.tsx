@@ -4,13 +4,14 @@ import {
   StyleSheet,
   Text,
   View,
-  SafeAreaView,
   StatusBar,
   ScrollView,
   TouchableOpacity,
   Image,
   Modal,
+  Platform,
 } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Sector,
   Wall,
@@ -50,7 +51,8 @@ import {
   LogIn,
 } from 'lucide-react-native';
 
-export default function App() {
+function MainApp() {
+  const insets = useSafeAreaInsets();
   const [destinations, setDestinations] = useState<ClimbingDestination[]>(CLIMBING_DESTINATIONS);
   const [selectedDestination, setSelectedDestination] = useState<ClimbingDestination>(CLIMBING_DESTINATIONS[0]);
   const [activeSectorIndex, setActiveSectorIndex] = useState(0);
@@ -261,12 +263,28 @@ export default function App() {
     setShowCreateRouteModal(true);
   };
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
+  const topInset = Platform.select({
+    android: Math.max(insets.top, StatusBar.currentHeight || 28) + 6,
+    ios: Math.max(insets.top, 20) + 6,
+    default: 12,
+  });
 
-      {/* Barra de Navegação Superior */}
-      <View style={styles.topNavbar}>
+  const bottomInset = Platform.select({
+    android: Math.max(insets.bottom, 12) + 8,
+    ios: Math.max(insets.bottom, 12) + 6,
+    default: 14,
+  });
+
+  return (
+    <View style={styles.safeArea}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="#0F172A"
+        translucent={Platform.OS === 'android'}
+      />
+
+      {/* Barra de Navegação Superior com Safe Area Inset no topo */}
+      <View style={[styles.topNavbar, { paddingTop: topInset }]}>
         <TouchableOpacity
           style={styles.brandRow}
           onPress={() => setCurrentTab('home')}
@@ -341,7 +359,11 @@ export default function App() {
           onSaveAscent={handleSaveAscent}
         />
       ) : (
-        <ScrollView style={styles.scrollBody} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollBody}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 30 }}
+        >
           {/* Botão Voltar para Seleção de Cidades / Destinos */}
           <TouchableOpacity
             style={styles.backToHomeBtn}
@@ -466,8 +488,8 @@ export default function App() {
         </ScrollView>
       )}
 
-      {/* Barra de Navegação Inferior Fixa (3 Abas Principais) */}
-      <View style={styles.bottomBar}>
+      {/* Barra de Navegação Inferior Fixa (3 Abas Principais) com Safe Area Inset na base */}
+      <View style={[styles.bottomBar, { paddingBottom: bottomInset }]}>
         <TouchableOpacity
           style={[styles.bottomBarItem, currentTab === 'home' && styles.bottomBarItemActive]}
           onPress={() => setCurrentTab('home')}
@@ -588,7 +610,15 @@ export default function App() {
           onClose={() => setShowAuthModal(false)}
         />
       </Modal>
-    </SafeAreaView>
+    </View>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <MainApp />
+    </SafeAreaProvider>
   );
 }
 
@@ -602,7 +632,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 12,
     backgroundColor: '#0F172A',
     borderBottomWidth: 1,
     borderBottomColor: '#1E293B',
@@ -873,8 +903,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     backgroundColor: '#0F172A',
-    paddingVertical: 8,
-    paddingBottom: 12,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#1E293B',
   },

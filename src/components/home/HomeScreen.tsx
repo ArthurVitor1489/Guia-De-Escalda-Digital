@@ -58,7 +58,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const featuredDest = destinations.find(d => d.id === 'dest-algodao-jandaira') || destinations[0];
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.scrollContent}
+    >
       {/* Hero Header */}
       <View style={styles.heroSection}>
         <View style={styles.heroBadge}>
@@ -196,7 +200,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               activeOpacity={0.8}
             >
               <View style={styles.destImageWrapper}>
-                <Image source={{ uri: dest.coverImage }} style={styles.destImage} />
+                <Image
+                  source={{ uri: dest.coverImage }}
+                  style={styles.destImage}
+                  resizeMode="cover"
+                />
                 <View style={styles.destStateBadge}>
                   <Text style={styles.destStateBadgeText}>{dest.state}</Text>
                 </View>
@@ -247,6 +255,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0B1120',
+  },
+  scrollContent: {
+    paddingBottom: 40,
   },
   heroSection: {
     paddingHorizontal: 16,
@@ -501,11 +512,14 @@ const styles = StyleSheet.create({
   },
   destImageWrapper: {
     width: 110,
+    minHeight: 120,
+    backgroundColor: '#0F172A',
     position: 'relative',
   },
   destImage: {
     width: '100%',
     height: '100%',
+    resizeMode: 'cover',
   },
   destStateBadge: {
     position: 'absolute',
