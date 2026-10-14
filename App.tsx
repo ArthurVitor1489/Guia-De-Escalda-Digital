@@ -432,21 +432,6 @@ function MainApp() {
                     setSelectedRoute(null);
                   }}
                 >
-                  <View style={styles.tierIndicatorRow}>
-                    {has3D ? (
-                      <View style={[styles.tierIndicator, { backgroundColor: '#10B981' }]}>
-                        <Text style={styles.tierIndicatorText}>3D</Text>
-                      </View>
-                    ) : has2D ? (
-                      <View style={[styles.tierIndicator, { backgroundColor: '#38BDF8' }]}>
-                        <Text style={styles.tierIndicatorText}>2D</Text>
-                      </View>
-                    ) : (
-                      <View style={[styles.tierIndicator, { backgroundColor: '#64748B' }]}>
-                        <Text style={styles.tierIndicatorText}>Foto</Text>
-                      </View>
-                    )}
-                  </View>
                   <Text
                     style={[
                       styles.sectorTabTitle,

@@ -1,12 +1,10 @@
-// Orquestrador de Representação Visual da Parede (Fallback Automático em 3 Níveis)
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Route, Wall, VisualRepresentationTier } from '../../types/climbing';
-import { Wall3DViewer } from '../viewer3d/Wall3DViewer';
-import { WallTopo2DViewer } from '../topo2d/WallTopo2DViewer';
+// Visualizador Central da Parede e Vias
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { Route, Wall } from '../../types/climbing';
 import { WallPhotoFallbackViewer } from './WallPhotoFallbackViewer';
 import { SunShadeCard } from '../common/EENeBadge';
-import { Compass, Sun, Mountain, Layers, Box, Camera } from 'lucide-react-native';
+import { Compass, Mountain } from 'lucide-react-native';
 
 interface WallVisualContainerProps {
   wall: Wall;
@@ -21,17 +19,6 @@ export const WallVisualContainer: React.FC<WallVisualContainerProps> = ({
   onSelectRoute,
   preferredGradeSystem,
 }) => {
-  // Lógica Automática de Fallback (Conforme Seção 2 da Especificação)
-  const getNaturalTier = (w: Wall): VisualRepresentationTier => {
-    if (w.model3D) return '3d';
-    if (w.activeTopo2D) return 'interactive_2d';
-    return 'photo';
-  };
-
-  const naturalTier = getNaturalTier(wall);
-
-  // Permite forçar um modo para demonstração / testes
-  const [activeTier, setActiveTier] = useState<VisualRepresentationTier>(naturalTier);
 
   // Calcula amplitude de graus da parede
   const minGrade = wall.routes[0]?.grade.brazilian || '4º';
@@ -47,67 +34,16 @@ export const WallVisualContainer: React.FC<WallVisualContainerProps> = ({
             {wall.routes.length} vias • {minGrade} a {maxGrade} • {wall.heightMeters}m de altura
           </Text>
         </View>
-
-        {/* Seletor Manual de Modo (Para Testar o Fallback) */}
-        <View style={styles.tierSelector}>
-          {wall.model3D && (
-            <TouchableOpacity
-              style={[styles.tierBtn, activeTier === '3d' && styles.tierBtnActive]}
-              onPress={() => setActiveTier('3d')}
-            >
-              <Box size={13} color={activeTier === '3d' ? '#10B981' : '#94A3B8'} />
-              <Text style={[styles.tierBtnText, activeTier === '3d' && styles.tierBtnTextActive]}>
-                3D
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={[styles.tierBtn, activeTier === 'interactive_2d' && styles.tierBtnActive]}
-            onPress={() => setActiveTier('interactive_2d')}
-          >
-            <Layers size={13} color={activeTier === 'interactive_2d' ? '#38BDF8' : '#94A3B8'} />
-            <Text style={[styles.tierBtnText, activeTier === 'interactive_2d' && styles.tierBtnTextActive]}>
-              2D
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tierBtn, activeTier === 'photo' && styles.tierBtnActive]}
-            onPress={() => setActiveTier('photo')}
-          >
-            <Camera size={13} color={activeTier === 'photo' ? '#E2E8F0' : '#94A3B8'} />
-            <Text style={[styles.tierBtnText, activeTier === 'photo' && styles.tierBtnTextActive]}>
-              Foto
-            </Text>
-          </TouchableOpacity>
-        </View>
       </View>
 
-      {/* Renderização do Componente de Acordo com a Prioridade */}
+      {/* Foto Imersiva da Parede com Lista de Vias */}
       <View style={styles.viewerWrapper}>
-        {activeTier === '3d' && wall.model3D ? (
-          <Wall3DViewer
-            wall={wall}
-            selectedRouteId={selectedRouteId}
-            onSelectRoute={onSelectRoute}
-            preferredGradeSystem={preferredGradeSystem}
-          />
-        ) : activeTier === 'interactive_2d' ? (
-          <WallTopo2DViewer
-            wall={wall}
-            selectedRouteId={selectedRouteId}
-            onSelectRoute={onSelectRoute}
-            preferredGradeSystem={preferredGradeSystem}
-          />
-        ) : (
-          <WallPhotoFallbackViewer
-            wall={wall}
-            selectedRouteId={selectedRouteId}
-            onSelectRoute={onSelectRoute}
-            preferredGradeSystem={preferredGradeSystem}
-          />
-        )}
+        <WallPhotoFallbackViewer
+          wall={wall}
+          selectedRouteId={selectedRouteId}
+          onSelectRoute={onSelectRoute}
+          preferredGradeSystem={preferredGradeSystem}
+        />
       </View>
 
       {/* Ficha Técnica de Campo da Parede */}

@@ -29,17 +29,13 @@ export const WallPhotoFallbackViewer: React.FC<WallPhotoFallbackViewerProps> = (
 
   return (
     <View style={styles.container}>
-      {/* Imagem da Parede com Badge Fallback */}
+      {/* Imagem da Parede */}
       <View style={styles.imageContainer}>
         <Image
           source={{ uri: imageUrl }}
           style={styles.image}
           resizeMode="cover"
         />
-        <View style={styles.badgeFallback}>
-          <Camera size={12} color="#FFFFFF" />
-          <Text style={styles.badgeFallbackText}>FOTO DA PAREDE (FALLBACK)</Text>
-        </View>
 
         <View style={styles.photoCountBadge}>
           <Text style={styles.photoCountText}>{wall.routes.length} vias nesta face</Text>

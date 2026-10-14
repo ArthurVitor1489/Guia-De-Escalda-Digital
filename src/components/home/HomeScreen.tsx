@@ -156,10 +156,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
             <View style={styles.featuredContent}>
               <View style={styles.featuredBadgesRow}>
-                <View style={styles.badge3D}>
-                  <Box size={11} color="#000000" />
-                  <Text style={styles.badge3DText}>3D ATIVO</Text>
-                </View>
                 <View style={styles.badgeState}>
                   <Text style={styles.badgeStateText}>{featuredDest.state}</Text>
                 </View>
@@ -211,11 +207,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   <View style={styles.destStateBadge}>
                     <Text style={styles.destStateBadgeText}>{dest.state}</Text>
                   </View>
-                  {dest.has3D && (
-                    <View style={styles.dest3DBadge}>
-                      <Text style={styles.dest3DBadgeText}>3D ATIVO</Text>
-                    </View>
-                  )}
                   <View style={styles.offlineBadgeSmall}>
                     <Text style={styles.offlineBadgeSmallText}>OFFLINE</Text>
                   </View>
