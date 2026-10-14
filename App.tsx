@@ -32,10 +32,10 @@ import { WallVisualContainer } from './src/components/wall/WallVisualContainer';
 import { RouteDetailModal } from './src/components/routes/RouteDetailModal';
 import { LogAscentModal } from './src/components/logbook/LogAscentModal';
 import { SectorApproachModal } from './src/components/common/SectorApproachModal';
-import { LogbookScreen } from './src/components/logbook/LogbookScreen';
 import { UserProfileScreen } from './src/components/profile/UserProfileScreen';
 import { AuthScreen } from './src/components/auth/AuthScreen';
 import { PostPhotoModal } from './src/components/community/PostPhotoModal';
+import { SelectCityModal } from './src/components/home/SelectCityModal';
 import {
   Mountain,
   Compass,
@@ -49,6 +49,7 @@ import {
   Users,
   Camera,
   LogIn,
+  ChevronDown,
 } from 'lucide-react-native';
 
 function MainApp() {
@@ -61,6 +62,7 @@ function MainApp() {
   const [logbookRoute, setLogbookRoute] = useState<Route | null>(null);
   const [photoTargetRoute, setPhotoTargetRoute] = useState<Route | null>(null);
   const [showApproachModal, setShowApproachModal] = useState(false);
+  const [showSelectCityModal, setShowSelectCityModal] = useState(false);
   const [showCreateCityModal, setShowCreateCityModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateRouteModal, setShowCreateRouteModal] = useState(false);
@@ -278,25 +280,36 @@ function MainApp() {
   return (
     <View style={styles.safeArea}>
       <StatusBar
-        barStyle="light-content"
-        backgroundColor="#0F172A"
+        barStyle="dark-content"
+        backgroundColor="#FFFFFF"
         translucent={Platform.OS === 'android'}
       />
 
       {/* Barra de Navegação Superior com Safe Area Inset no topo */}
       <View style={[styles.topNavbar, { paddingTop: topInset }]}>
-        <TouchableOpacity
-          style={styles.brandRow}
-          onPress={() => setCurrentTab('home')}
-          activeOpacity={0.7}
-        >
-          <Mountain size={22} color="#10B981" />
-          <Text style={styles.brandTitle}>CRUX</Text>
-          <View style={styles.offlinePill}>
-            <WifiOff size={10} color="#10B981" />
-            <Text style={styles.offlineText}>OFFLINE</Text>
-          </View>
-        </TouchableOpacity>
+        <View style={styles.topNavbarLeft}>
+          <TouchableOpacity
+            style={styles.brandRow}
+            onPress={() => setCurrentTab('home')}
+            activeOpacity={0.7}
+          >
+            <Mountain size={22} color="#059669" />
+            <Text style={styles.brandTitle}>CRUX</Text>
+          </TouchableOpacity>
+
+          {/* Seletor Rápido de Cidade / Polo */}
+          <TouchableOpacity
+            style={styles.citySelectorBtn}
+            onPress={() => setShowSelectCityModal(true)}
+            activeOpacity={0.75}
+          >
+            <MapPin size={13} color="#059669" />
+            <Text style={styles.citySelectorText} numberOfLines={1}>
+              {selectedDestination.name} ({selectedDestination.state})
+            </Text>
+            <ChevronDown size={14} color="#059669" />
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.topActions}>
           {/* Seletor de Graduação */}
@@ -364,16 +377,17 @@ function MainApp() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 30 }}
         >
-          {/* Botão Voltar para Seleção de Cidades / Destinos */}
+          {/* Botão para Trocar de Cidade / Polo */}
           <TouchableOpacity
             style={styles.backToHomeBtn}
-            onPress={() => setCurrentTab('home')}
+            onPress={() => setShowSelectCityModal(true)}
             activeOpacity={0.7}
           >
-            <ArrowLeft size={16} color="#38BDF8" />
+            <MapPin size={15} color="#059669" />
             <Text style={styles.backToHomeText}>
-              Ver outras cidades / destinos ({selectedDestination.name}, {selectedDestination.state})
+              Polo: {selectedDestination.name} ({selectedDestination.state}) • Trocar cidade
             </Text>
+            <ChevronDown size={14} color="#059669" />
           </TouchableOpacity>
 
           {/* Seletor do Setor Atual */}
@@ -557,6 +571,16 @@ function MainApp() {
         onClose={() => setShowApproachModal(false)}
       />
 
+      {/* Modal de Seleção Rápida de Cidade / Polo */}
+      <SelectCityModal
+        visible={showSelectCityModal}
+        onClose={() => setShowSelectCityModal(false)}
+        destinations={destinations}
+        selectedDestination={selectedDestination}
+        onSelectDestination={handleSelectDestination}
+        onOpenCreateCity={handleOpenCreateCity}
+      />
+
       {/* NÍVEL 1: Modal de Cadastro de Nova Cidade / Polo */}
       <CreateCityModal
         visible={showCreateCityModal}
@@ -625,7 +649,7 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0B1120',
+    backgroundColor: '#F8FAFC',
   },
   topNavbar: {
     flexDirection: 'row',
@@ -633,101 +657,130 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 12,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
+    borderBottomColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  topNavbarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
   },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   brandTitle: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '900',
-    color: '#F8FAFC',
+    color: '#0F172A',
     letterSpacing: 1,
+  },
+  citySelectorBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    maxWidth: 160,
+  },
+  citySelectorText: {
+    color: '#047857',
+    fontSize: 11,
+    fontWeight: '800',
+    flexShrink: 1,
   },
   offlinePill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    backgroundColor: '#ECFDF5',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
   },
   offlineText: {
-    color: '#10B981',
+    color: '#059669',
     fontSize: 9,
     fontWeight: '800',
   },
   topActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   gradeToggleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
+    backgroundColor: '#F1F5F9',
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 8,
     gap: 4,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#E2E8F0',
   },
   gradeToggleLabel: {
-    color: '#94A3B8',
+    color: '#64748B',
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   gradeToggleActive: {
-    color: '#38BDF8',
+    color: '#0284C7',
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   userNavbarBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#F1F5F9',
     paddingLeft: 4,
     paddingRight: 10,
     paddingVertical: 4,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#E2E8F0',
   },
   userNavbarBtnActive: {
-    borderColor: '#A855F7',
-    backgroundColor: 'rgba(168, 85, 247, 0.15)',
+    borderColor: '#059669',
+    backgroundColor: '#ECFDF5',
   },
   userNavbarAvatar: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#10B981',
+    borderWidth: 1.5,
+    borderColor: '#059669',
   },
   userNavbarName: {
-    color: '#F8FAFC',
+    color: '#0F172A',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
     maxWidth: 70,
   },
   loginNavbarBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#10B981',
+    backgroundColor: '#059669',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
   },
   loginNavbarBtnText: {
-    color: '#0F172A',
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '900',
   },
@@ -735,30 +788,42 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 12,
+    backgroundColor: '#F8FAFC',
   },
   backToHomeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
+    borderRadius: 10,
+    alignSelf: 'stretch',
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#334155',
+    borderWidth: 1.5,
+    borderColor: '#A7F3D0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   backToHomeText: {
-    color: '#38BDF8',
+    color: '#047857',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
+    flex: 1,
   },
   sectorBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
   },
   sectorInfo: {
     flex: 1,
@@ -770,47 +835,47 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   sectorLocation: {
-    color: '#94A3B8',
+    color: '#64748B',
     fontSize: 11,
     fontWeight: '600',
   },
   sectorNameText: {
-    color: '#FFFFFF',
+    color: '#0F172A',
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '900',
     letterSpacing: -0.3,
   },
   approachBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#E0F2FE',
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#BAE6FD',
   },
   approachBtnText: {
-    color: '#38BDF8',
+    color: '#0284C7',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   sectorTabsScroll: {
     gap: 10,
     marginBottom: 16,
   },
   sectorTabItem: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 10,
     minWidth: 130,
-    borderWidth: 1,
-    borderColor: '#334155',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
   },
   sectorTabItemSelected: {
-    backgroundColor: '#0F172A',
-    borderColor: '#38BDF8',
+    backgroundColor: '#ECFDF5',
+    borderColor: '#059669',
   },
   tierIndicatorRow: {
     marginBottom: 6,
@@ -827,12 +892,13 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   sectorTabTitle: {
-    color: '#94A3B8',
+    color: '#475569',
     fontSize: 13,
     fontWeight: '700',
   },
   sectorTabTitleSelected: {
-    color: '#FFFFFF',
+    color: '#059669',
+    fontWeight: '900',
   },
   sectorTabSub: {
     color: '#64748B',
@@ -843,43 +909,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    backgroundColor: '#F0FDF4',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: '#10B981',
+    borderWidth: 1.5,
+    borderColor: '#059669',
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignSelf: 'center',
     minHeight: 65,
   },
   addSectorTabBtnText: {
-    color: '#10B981',
+    color: '#059669',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   routeActionBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#1E293B',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#334155',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
   },
   routeActionInfo: {
     flex: 1,
   },
   routeActionTitle: {
-    color: '#F8FAFC',
+    color: '#0F172A',
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   routeActionSub: {
-    color: '#94A3B8',
+    color: '#64748B',
     fontSize: 11,
     marginTop: 2,
   },
@@ -887,13 +953,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#10B981',
+    backgroundColor: '#059669',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
   },
   createRouteBtnText: {
-    color: '#0F172A',
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.5,
@@ -902,10 +968,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: '#0F172A',
+    backgroundColor: '#FFFFFF',
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#1E293B',
+    borderTopColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 8,
   },
   bottomBarItem: {
     alignItems: 'center',
@@ -920,7 +991,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   bottomBarTextActive: {
-    color: '#F8FAFC',
-    fontWeight: '700',
+    color: '#059669',
+    fontWeight: '900',
   },
 });

@@ -199,40 +199,50 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               onPress={() => onSelectDestination(dest)}
               activeOpacity={0.8}
             >
-              <View style={styles.destImageWrapper}>
+              <View style={styles.destBannerWrapper}>
                 <Image
                   source={{ uri: dest.coverImage }}
-                  style={styles.destImage}
+                  style={styles.destBannerImage}
                   resizeMode="cover"
                 />
-                <View style={styles.destStateBadge}>
-                  <Text style={styles.destStateBadgeText}>{dest.state}</Text>
-                </View>
-                {dest.has3D && (
-                  <View style={styles.dest3DBadge}>
-                    <Text style={styles.dest3DBadgeText}>3D</Text>
+                <View style={styles.destBannerOverlay} />
+                
+                <View style={styles.destBannerBadges}>
+                  <View style={styles.destStateBadge}>
+                    <Text style={styles.destStateBadgeText}>{dest.state}</Text>
                   </View>
-                )}
+                  {dest.has3D && (
+                    <View style={styles.dest3DBadge}>
+                      <Text style={styles.dest3DBadgeText}>3D ATIVO</Text>
+                    </View>
+                  )}
+                  <View style={styles.offlineBadgeSmall}>
+                    <Text style={styles.offlineBadgeSmallText}>OFFLINE</Text>
+                  </View>
+                </View>
+
+                <View style={styles.destBannerBottom}>
+                  <Text style={styles.destName}>{dest.name}</Text>
+                  <Text style={styles.destRegion}>{dest.regionName}</Text>
+                </View>
               </View>
 
               <View style={styles.destInfo}>
-                <View style={styles.destTopRow}>
-                  <Text style={styles.destName}>{dest.name}</Text>
-                </View>
-                <Text style={styles.destRegion}>{dest.regionName}</Text>
-
                 <View style={styles.destPillsRow}>
                   <Text style={styles.destRoutesPill}>
-                    {dest.totalRoutes} vias
+                    🧗 {dest.totalRoutes} vias
                   </Text>
                   <Text style={styles.destRockPill}>
-                    {dest.rockType}
+                    🪨 {dest.rockType}
+                  </Text>
+                  <Text style={styles.destSectorsPill}>
+                    📍 {dest.totalSectors} setores
                   </Text>
                 </View>
 
                 {dest.distanceFromCapital ? (
                   <Text style={styles.destDistance} numberOfLines={1}>
-                    📍 {dest.distanceFromCapital}
+                    🚗 {dest.distanceFromCapital}
                   </Text>
                 ) : null}
 
@@ -240,7 +250,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   <Text style={styles.destHighlightText} numberOfLines={1}>
                     ⭐ {dest.highlights[0]}
                   </Text>
-                  <ChevronRight size={16} color="#38BDF8" />
+                  <View style={styles.exploreBtnSmall}>
+                    <Text style={styles.exploreBtnSmallText}>ABRIR GUIA</Text>
+                    <ChevronRight size={14} color="#059669" />
+                  </View>
                 </View>
               </View>
             </TouchableOpacity>
@@ -254,7 +267,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1120',
+    backgroundColor: '#F8FAFC',
   },
   scrollContent: {
     paddingBottom: 40,
@@ -262,34 +275,40 @@ const styles = StyleSheet.create({
   heroSection: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 12,
+    paddingBottom: 14,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    marginBottom: 12,
   },
   heroBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    backgroundColor: '#ECFDF5',
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 12,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
   },
   heroBadgeText: {
-    color: '#10B981',
+    color: '#059669',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   heroTitle: {
-    color: '#F8FAFC',
-    fontSize: 26,
+    color: '#0F172A',
+    fontSize: 24,
     fontWeight: '900',
     letterSpacing: -0.5,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   heroSubtitle: {
-    color: '#94A3B8',
+    color: '#475569',
     fontSize: 13,
     lineHeight: 18,
     marginBottom: 14,
@@ -299,14 +318,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#38BDF8',
-    paddingVertical: 13,
+    backgroundColor: '#0284C7',
+    paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
-    marginBottom: 14,
+    marginBottom: 12,
   },
   createCityHeroBtnText: {
-    color: '#0F172A',
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 0.5,
@@ -315,20 +334,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#F1F5F9',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#E2E8F0',
   },
   searchInput: {
     flex: 1,
-    color: '#FFFFFF',
+    color: '#0F172A',
     fontSize: 13,
+    fontWeight: '600',
   },
   statesFilterSection: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   statesScroll: {
     paddingHorizontal: 16,
@@ -338,36 +358,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#334155',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
   },
   stateChipActive: {
-    backgroundColor: '#38BDF8',
-    borderColor: '#38BDF8',
+    backgroundColor: '#059669',
+    borderColor: '#059669',
   },
   stateChipText: {
-    color: '#94A3B8',
+    color: '#475569',
     fontSize: 12,
     fontWeight: '700',
   },
   stateChipTextActive: {
-    color: '#0F172A',
+    color: '#FFFFFF',
   },
   stateCountBadge: {
-    backgroundColor: '#0F172A',
+    backgroundColor: '#F1F5F9',
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 10,
   },
   stateCountBadgeActive: {
-    backgroundColor: '#0284C7',
+    backgroundColor: '#047857',
   },
   stateCountText: {
-    color: '#94A3B8',
+    color: '#64748B',
     fontSize: 10,
     fontWeight: '800',
   },
@@ -385,9 +405,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   featuredTag: {
-    color: '#FFE600',
+    color: '#D97706',
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '900',
     letterSpacing: 0.5,
   },
   featuredCard: {
@@ -395,8 +415,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
     height: 220,
-    borderWidth: 1,
-    borderColor: '#334155',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#0F172A',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
   },
   featuredImage: {
     width: '100%',
@@ -404,7 +430,7 @@ const styles = StyleSheet.create({
   },
   featuredOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
   },
   featuredContent: {
     position: 'absolute',
@@ -433,7 +459,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   badgeState: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -456,7 +482,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   featuredDesc: {
-    color: '#CBD5E1',
+    color: '#E2E8F0',
     fontSize: 12,
     lineHeight: 16,
     marginBottom: 10,
@@ -466,11 +492,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.15)',
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
     paddingTop: 8,
   },
   featuredMetaText: {
-    color: '#94A3B8',
+    color: '#CBD5E1',
     fontSize: 11,
     fontWeight: '600',
   },
@@ -478,129 +504,164 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#38BDF8',
+    backgroundColor: '#0284C7',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 6,
   },
   featuredActionText: {
-    color: '#0F172A',
+    color: '#FFFFFF',
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   destinationsListSection: {
     paddingHorizontal: 16,
     paddingBottom: 30,
   },
   listSectionTitle: {
-    color: '#94A3B8',
-    fontSize: 11,
-    fontWeight: '800',
+    color: '#475569',
+    fontSize: 12,
+    fontWeight: '900',
     letterSpacing: 0.5,
     marginBottom: 12,
   },
   destinationsGrid: {
-    gap: 12,
+    gap: 14,
   },
   destCard: {
-    flexDirection: 'row',
-    backgroundColor: '#1E293B',
-    borderRadius: 14,
+    flexDirection: 'column',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#334155',
-    minHeight: 115,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  destImageWrapper: {
-    width: 110,
-    backgroundColor: '#0F172A',
+  destBannerWrapper: {
+    height: 140,
+    width: '100%',
     position: 'relative',
-    overflow: 'hidden',
-    alignSelf: 'stretch',
+    backgroundColor: '#0F172A',
   },
-  destImage: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  destBannerImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
+  },
+  destBannerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+  },
+  destBannerBadges: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    right: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   destStateBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: '#0F172A',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
   },
   destStateBadgeText: {
     color: '#38BDF8',
-    fontSize: 10,
-    fontWeight: '800',
+    fontSize: 11,
+    fontWeight: '900',
   },
   dest3DBadge: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
     backgroundColor: '#10B981',
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: 6,
   },
   dest3DBadgeText: {
     color: '#000000',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  offlineBadgeSmall: {
+    marginLeft: 'auto',
+    backgroundColor: 'rgba(5, 150, 105, 0.9)',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  offlineBadgeSmallText: {
+    color: '#FFFFFF',
     fontSize: 9,
     fontWeight: '900',
   },
-  destInfo: {
-    flex: 1,
-    padding: 12,
-  },
-  destTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  destBannerBottom: {
+    position: 'absolute',
+    bottom: 10,
+    left: 12,
+    right: 12,
   },
   destName: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: 18,
+    fontWeight: '900',
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   destRegion: {
-    color: '#94A3B8',
-    fontSize: 11,
-    marginBottom: 6,
+    color: '#BAE6FD',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 1,
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  destInfo: {
+    padding: 12,
+    backgroundColor: '#FFFFFF',
   },
   destPillsRow: {
     flexDirection: 'row',
     gap: 6,
-    marginBottom: 6,
+    marginBottom: 8,
+    flexWrap: 'wrap',
   },
   destRoutesPill: {
-    color: '#38BDF8',
-    backgroundColor: 'rgba(56, 189, 248, 0.15)',
-    fontSize: 10,
-    fontWeight: '700',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    color: '#0284C7',
+    backgroundColor: '#E0F2FE',
+    fontSize: 11,
+    fontWeight: '800',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   destRockPill: {
-    color: '#CBD5E1',
-    backgroundColor: '#0F172A',
-    fontSize: 10,
-    fontWeight: '600',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    color: '#047857',
+    backgroundColor: '#ECFDF5',
+    fontSize: 11,
+    fontWeight: '800',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  destSectorsPill: {
+    color: '#475569',
+    backgroundColor: '#F1F5F9',
+    fontSize: 11,
+    fontWeight: '700',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   destDistance: {
     color: '#64748B',
-    fontSize: 10,
+    fontSize: 11,
+    fontWeight: '500',
     marginBottom: 8,
   },
   destFooter: {
@@ -608,13 +669,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: '#334155',
-    paddingTop: 6,
+    borderTopColor: '#F1F5F9',
+    paddingTop: 8,
   },
   destHighlightText: {
     flex: 1,
-    color: '#E2E8F0',
+    color: '#334155',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  exploreBtnSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  exploreBtnSmallText: {
+    color: '#059669',
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: '900',
   },
 });
