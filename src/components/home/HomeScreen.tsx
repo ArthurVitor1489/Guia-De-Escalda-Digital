@@ -138,12 +138,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </ScrollView>
       </View>
 
-      {/* Destaque Principal: Algodão de Jandaíra (PB) */}
-      {selectedState === 'TODOS' || selectedState === 'PB' ? (
+      {/* Destaque Principal: Exibe apenas se houver ao menos 1 destino cadastrado */}
+      {featuredDest && (selectedState === 'TODOS' || selectedState === featuredDest.state) ? (
         <View style={styles.featuredSection}>
           <View style={styles.featuredHeader}>
             <Star size={14} color="#FFE600" fill="#FFE600" />
-            <Text style={styles.featuredTag}>POLO EM DESTAQUE NA PARAÍBA</Text>
+            <Text style={styles.featuredTag}>POLO EM DESTAQUE ({featuredDest.state})</Text>
           </View>
 
           <TouchableOpacity
@@ -184,72 +184,101 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {/* Lista / Grid de Polos de Escalada */}
       <View style={styles.destinationsListSection}>
         <Text style={styles.listSectionTitle}>
-          POLOS & CIDADES DISPONÍVEIS ({filteredDestinations.length})
+          POLOS & CIDADES CADASTRADAS ({filteredDestinations.length})
         </Text>
 
-        <View style={styles.destinationsGrid}>
-          {filteredDestinations.map(dest => (
+        {filteredDestinations.length === 0 ? (
+          <View
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: 16,
+              padding: 28,
+              alignItems: 'center',
+              borderWidth: 1.5,
+              borderColor: '#E2E8F0',
+              marginTop: 8,
+            }}
+          >
+            <Text style={{ fontSize: 18, fontWeight: '900', color: '#0F172A', marginBottom: 6, textAlign: 'center' }}>
+              Nenhuma cidade cadastrada ainda
+            </Text>
+            <Text style={{ fontSize: 13, color: '#64748B', textAlign: 'center', lineHeight: 19, marginBottom: 18 }}>
+              O seu guia está limpo e pronto para uso real! Comece cadastrando a sua primeira cidade ou polo de escalada.
+            </Text>
             <TouchableOpacity
-              key={dest.id}
-              style={styles.destCard}
-              onPress={() => onSelectDestination(dest)}
+              style={[styles.createCityHeroBtn, { width: '100%', marginBottom: 0 }]}
+              onPress={onOpenCreateCity}
               activeOpacity={0.8}
             >
-              <View style={styles.destBannerWrapper}>
-                <Image
-                  source={{ uri: dest.coverImage }}
-                  style={styles.destBannerImage}
-                  resizeMode="cover"
-                />
-                <View style={styles.destBannerOverlay} />
-                
-                <View style={styles.destBannerBadges}>
-                  <View style={styles.destStateBadge}>
-                    <Text style={styles.destStateBadgeText}>{dest.state}</Text>
-                  </View>
-                  <View style={styles.offlineBadgeSmall}>
-                    <Text style={styles.offlineBadgeSmallText}>OFFLINE</Text>
-                  </View>
-                </View>
-
-                <View style={styles.destBannerBottom}>
-                  <Text style={styles.destName}>{dest.name}</Text>
-                  <Text style={styles.destRegion}>{dest.regionName}</Text>
-                </View>
-              </View>
-
-              <View style={styles.destInfo}>
-                <View style={styles.destPillsRow}>
-                  <Text style={styles.destRoutesPill}>
-                    🧗 {dest.totalRoutes} vias
-                  </Text>
-                  <Text style={styles.destRockPill}>
-                    🪨 {dest.rockType}
-                  </Text>
-                  <Text style={styles.destSectorsPill}>
-                    📍 {dest.totalSectors} setores
-                  </Text>
-                </View>
-
-                {dest.distanceFromCapital ? (
-                  <Text style={styles.destDistance} numberOfLines={1}>
-                    🚗 {dest.distanceFromCapital}
-                  </Text>
-                ) : null}
-
-                <View style={styles.destFooter}>
-                  <Text style={styles.destHighlightText} numberOfLines={1}>
-                    ⭐ {dest.highlights[0]}
-                  </Text>
-                  <View style={styles.exploreBtnSmall}>
-                    <Text style={styles.exploreBtnSmallText}>ABRIR GUIA</Text>
-                    <ChevronRight size={14} color="#059669" />
-                  </View>
-                </View>
-              </View>
+              <Plus size={16} color="#0F172A" />
+              <Text style={styles.createCityHeroBtnText}>CADASTRAR PRIMEIRA CIDADE</Text>
             </TouchableOpacity>
-          ))}
-        </View>
+          </View>
+        ) : (
+          <View style={styles.destinationsGrid}>
+            {filteredDestinations.map(dest => (
+              <TouchableOpacity
+                key={dest.id}
+                style={styles.destCard}
+                onPress={() => onSelectDestination(dest)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.destBannerWrapper}>
+                  <Image
+                    source={{ uri: dest.coverImage }}
+                    style={styles.destBannerImage}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.destBannerOverlay} />
+                  
+                  <View style={styles.destBannerBadges}>
+                    <View style={styles.destStateBadge}>
+                      <Text style={styles.destStateBadgeText}>{dest.state}</Text>
+                    </View>
+                    <View style={styles.offlineBadgeSmall}>
+                      <Text style={styles.offlineBadgeSmallText}>OFFLINE</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.destBannerBottom}>
+                    <Text style={styles.destName}>{dest.name}</Text>
+                    <Text style={styles.destRegion}>{dest.regionName}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.destInfo}>
+                  <View style={styles.destPillsRow}>
+                    <Text style={styles.destRoutesPill}>
+                      🧗 {dest.totalRoutes} vias
+                    </Text>
+                    <Text style={styles.destRockPill}>
+                      🪨 {dest.rockType}
+                    </Text>
+                    <Text style={styles.destSectorsPill}>
+                      📍 {dest.totalSectors} setores
+                    </Text>
+                  </View>
+
+                  {dest.distanceFromCapital ? (
+                    <Text style={styles.destDistance} numberOfLines={1}>
+                      🚗 {dest.distanceFromCapital}
+                    </Text>
+                  ) : null}
+
+                  <View style={styles.destFooter}>
+                    <Text style={styles.destHighlightText} numberOfLines={1}>
+                      ⭐ {dest.highlights?.[0] || dest.name}
+                    </Text>
+                    <View style={styles.exploreBtnSmall}>
+                      <Text style={styles.exploreBtnSmallText}>ABRIR GUIA</Text>
+                      <ChevronRight size={14} color="#059669" />
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
     </ScrollView>
   );

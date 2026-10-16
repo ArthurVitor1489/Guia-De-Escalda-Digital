@@ -4,11 +4,11 @@ import { AscentLog, Sector, ClimbingDestination } from '../types/climbing';
 import { INITIAL_LOGBOOK_ENTRIES, MOCK_SECTORS } from './mockData';
 
 const STORAGE_KEYS = {
-  LOGBOOK: '@guia_escalada:logbook',
-  FAVORITES: '@guia_escalada:favorites',
-  OFFLINE_SECTORS: '@guia_escalada:offline_sectors',
-  CUSTOM_DESTINATIONS: '@guia_escalada:custom_destinations',
-  USER_PREFERENCES: '@guia_escalada:preferences',
+  LOGBOOK: '@guia_escalada_v2:logbook',
+  FAVORITES: '@guia_escalada_v2:favorites',
+  OFFLINE_SECTORS: '@guia_escalada_v2:offline_sectors',
+  CUSTOM_DESTINATIONS: '@guia_escalada_v2:custom_destinations',
+  USER_PREFERENCES: '@guia_escalada_v2:preferences',
 };
 
 export interface UserPreferences {
@@ -49,11 +49,9 @@ export const StorageService = {
       if (data) {
         return JSON.parse(data);
       }
-      // Inicializa com dados de exemplo
-      await AsyncStorage.setItem(STORAGE_KEYS.LOGBOOK, JSON.stringify(INITIAL_LOGBOOK_ENTRIES));
-      return INITIAL_LOGBOOK_ENTRIES;
+      return [];
     } catch {
-      return INITIAL_LOGBOOK_ENTRIES;
+      return [];
     }
   },
 

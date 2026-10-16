@@ -26,7 +26,7 @@ interface SelectCityModalProps {
   visible: boolean;
   onClose: () => void;
   destinations: ClimbingDestination[];
-  selectedDestination: ClimbingDestination;
+  selectedDestination: ClimbingDestination | null;
   onSelectDestination: (dest: ClimbingDestination) => void;
   onOpenCreateCity: () => void;
   isLightTheme?: boolean;
@@ -127,7 +127,7 @@ export const SelectCityModal: React.FC<SelectCityModalProps> = ({
           {/* Lista de Cidades / Polos */}
           <ScrollView style={styles.listScroll} showsVerticalScrollIndicator={false}>
             {filtered.map(dest => {
-              const isCurrent = dest.id === selectedDestination.id;
+              const isCurrent = dest.id === selectedDestination?.id;
               return (
                 <TouchableOpacity
                   key={dest.id}
@@ -164,11 +164,6 @@ export const SelectCityModal: React.FC<SelectCityModalProps> = ({
                       <Text style={styles.citySectorsBadge}>
                         {dest.totalSectors} setores
                       </Text>
-                      {dest.has3D && (
-                        <Text style={styles.city3DBadge}>
-                          3D
-                        </Text>
-                      )}
                       <View style={styles.offlineAvailableBadge}>
                         <CheckCircle2 size={11} color="#059669" />
                         <Text style={styles.offlineAvailableText}>OFFLINE</Text>

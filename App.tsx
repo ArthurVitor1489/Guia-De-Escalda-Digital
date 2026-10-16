@@ -54,8 +54,8 @@ import {
 
 function MainApp() {
   const insets = useSafeAreaInsets();
-  const [destinations, setDestinations] = useState<ClimbingDestination[]>(CLIMBING_DESTINATIONS);
-  const [selectedDestination, setSelectedDestination] = useState<ClimbingDestination>(CLIMBING_DESTINATIONS[0]);
+  const [destinations, setDestinations] = useState<ClimbingDestination[]>([]);
+  const [selectedDestination, setSelectedDestination] = useState<ClimbingDestination | null>(null);
   const [activeSectorIndex, setActiveSectorIndex] = useState(0);
   const [activeWallIndex, setActiveWallIndex] = useState(0);
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
@@ -71,13 +71,13 @@ function MainApp() {
   const [currentTab, setCurrentTab] = useState<'home' | 'guide' | 'logbook' | 'profile'>('home');
   const [gradeSystem, setGradeSystem] = useState<'brazilian' | 'french' | 'yds'>('brazilian');
   const [logs, setLogs] = useState<AscentLog[]>([]);
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(DEFAULT_USER);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [communityPhotos, setCommunityPhotos] = useState<CommunityPhoto[]>([]);
 
   // Setores do destino atualmente selecionado
-  const currentSectors = selectedDestination.sectors || MOCK_SECTORS;
-  const currentSector = currentSectors[activeSectorIndex] || currentSectors[0];
-  const currentWall = currentSector.walls[activeWallIndex] || currentSector.walls[0];
+  const currentSectors = selectedDestination?.sectors || [];
+  const currentSector = currentSectors[activeSectorIndex] || currentSectors[0] || null;
+  const currentWall = currentSector?.walls?.[activeWallIndex] || currentSector?.walls?.[0] || null;
 
   // Carrega preferências, usuário, fotos da comunidade e dados ao iniciar
   useEffect(() => {
@@ -88,7 +88,11 @@ function MainApp() {
       setGradeSystem(prefs.gradeSystem);
       const customDests = await StorageService.getCustomDestinations();
       if (customDests && customDests.length > 0) {
-        setDestinations([...customDests, ...CLIMBING_DESTINATIONS]);
+        setDestinations(customDests);
+        setSelectedDestination(customDests[0]);
+      } else {
+        setDestinations([]);
+        setSelectedDestination(null);
       }
       const user = await CommunityService.getCurrentUser();
       setCurrentUser(user);
@@ -145,6 +149,7 @@ function MainApp() {
     baseDestination?: ClimbingDestination
   ) => {
     const targetDest = baseDestination || destinations.find(d => d.id === destId) || selectedDestination;
+    if (!targetDest) return;
     const updatedDest = await StorageService.addSectorToDestination(destId, newSector, targetDest);
 
     if (updatedDest) {
@@ -165,6 +170,7 @@ function MainApp() {
 
   // NÍVEL 3: Salva uma nova via ou boulder dentro da pedra ativa
   const handleSaveRoute = async (newRoute: Route) => {
+    if (!selectedDestination || !currentSector || !currentWall) return;
     const updatedDest = await StorageService.addRouteToSector(
       selectedDestination.id,
       currentSector.id,
@@ -228,40 +234,24 @@ function MainApp() {
     setShowAuthModal(true);
   };
 
-  // Abre modal de postagem de foto (exige login)
+  // Abre modal de postagem de foto
   const handleOpenPostPhoto = (route?: Route) => {
-    if (!currentUser) {
-      setShowAuthModal(true);
-      return;
-    }
     setPhotoTargetRoute(route || null);
     setShowPostPhotoModal(true);
   };
 
   // Abre cadastro de cidade (Nível 1)
   const handleOpenCreateCity = () => {
-    if (!currentUser) {
-      setShowAuthModal(true);
-      return;
-    }
     setShowCreateCityModal(true);
   };
 
   // Abre cadastro de pedra em campo (Nível 2)
   const handleOpenCreateCrag = () => {
-    if (!currentUser) {
-      setShowAuthModal(true);
-      return;
-    }
     setShowCreateModal(true);
   };
 
   // Abre cadastro de via ou boulder (Nível 3)
   const handleOpenCreateRoute = () => {
-    if (!currentUser) {
-      setShowAuthModal(true);
-      return;
-    }
     setShowCreateRouteModal(true);
   };
 
@@ -305,7 +295,9 @@ function MainApp() {
           >
             <MapPin size={13} color="#059669" />
             <Text style={styles.citySelectorText} numberOfLines={1}>
-              {selectedDestination.name} ({selectedDestination.state})
+              {selectedDestination
+                ? `${selectedDestination.name} (${selectedDestination.state})`
+                : 'Selecionar Cidade'}
             </Text>
             <ChevronDown size={14} color="#059669" />
           </TouchableOpacity>
@@ -342,7 +334,7 @@ function MainApp() {
               onPress={() => setShowAuthModal(true)}
               activeOpacity={0.8}
             >
-              <LogIn size={14} color="#0F172A" />
+              <LogIn size={14} color="#FFFFFF" />
               <Text style={styles.loginNavbarBtnText}>Entrar</Text>
             </TouchableOpacity>
           )}
@@ -362,7 +354,7 @@ function MainApp() {
           logs={logs}
           communityPhotos={communityPhotos}
           destinations={destinations}
-          customDestinations={destinations.filter(d => !CLIMBING_DESTINATIONS.some(c => c.id === d.id))}
+          customDestinations={destinations}
           initialTab={currentTab === 'logbook' ? 'ascents' : 'ascents'}
           onOpenAuthModal={() => setShowAuthModal(true)}
           onOpenPostPhoto={() => handleOpenPostPhoto()}
@@ -371,6 +363,70 @@ function MainApp() {
           onUpdateUser={(updated) => setCurrentUser(updated)}
           onSaveAscent={handleSaveAscent}
         />
+      ) : !selectedDestination ? (
+        <View style={[styles.scrollBody, { justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
+          <Mountain size={48} color="#059669" />
+          <Text style={{ fontSize: 18, fontWeight: '900', color: '#0F172A', marginTop: 12, textAlign: 'center' }}>
+            Nenhuma cidade selecionada
+          </Text>
+          <Text style={{ fontSize: 13, color: '#64748B', textAlign: 'center', marginTop: 6, marginBottom: 20 }}>
+            Cadastre sua primeira cidade ou selecione um polo de escalada para ver as pedras e vias.
+          </Text>
+          <TouchableOpacity
+            style={styles.createRouteBtn}
+            onPress={handleOpenCreateCity}
+            activeOpacity={0.8}
+          >
+            <Plus size={16} color="#0F172A" />
+            <Text style={styles.createRouteBtnText}>CADASTRAR CIDADE / POLO</Text>
+          </TouchableOpacity>
+        </View>
+      ) : !currentSector || !currentWall ? (
+        <ScrollView
+          style={styles.scrollBody}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 30 }}
+        >
+          <TouchableOpacity
+            style={styles.backToHomeBtn}
+            onPress={() => setShowSelectCityModal(true)}
+            activeOpacity={0.7}
+          >
+            <MapPin size={15} color="#059669" />
+            <Text style={styles.backToHomeText}>
+              Polo: {selectedDestination.name} ({selectedDestination.state}) • Trocar cidade
+            </Text>
+            <ChevronDown size={14} color="#059669" />
+          </TouchableOpacity>
+
+          <View
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: 16,
+              padding: 28,
+              alignItems: 'center',
+              borderWidth: 1.5,
+              borderColor: '#E2E8F0',
+              marginTop: 12,
+            }}
+          >
+            <Mountain size={42} color="#059669" />
+            <Text style={{ fontSize: 18, fontWeight: '900', color: '#0F172A', marginTop: 12, marginBottom: 6, textAlign: 'center' }}>
+              Nenhuma pedra cadastrada em {selectedDestination.name}
+            </Text>
+            <Text style={{ fontSize: 13, color: '#64748B', textAlign: 'center', lineHeight: 19, marginBottom: 18 }}>
+              Adicione a primeira pedra, falésia ou setor desta cidade com foto da parede e coordenadas GPS.
+            </Text>
+            <TouchableOpacity
+              style={styles.createRouteBtn}
+              onPress={handleOpenCreateCrag}
+              activeOpacity={0.8}
+            >
+              <Plus size={16} color="#0F172A" />
+              <Text style={styles.createRouteBtnText}>CADASTRAR PRIMEIRA PEDRA</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       ) : (
         <ScrollView
           style={styles.scrollBody}
@@ -419,8 +475,6 @@ function MainApp() {
           >
             {currentSectors.map((sec, sIdx) => {
               const isSecSelected = sIdx === activeSectorIndex;
-              const has3D = sec.walls.some(w => !!w.model3D);
-              const has2D = sec.walls.some(w => !!w.activeTopo2D);
 
               return (
                 <TouchableOpacity
@@ -477,7 +531,7 @@ function MainApp() {
             </TouchableOpacity>
           </View>
 
-          {/* Componente Central da Parede (Orquestrador 3D -> 2D -> Foto) */}
+          {/* Componente Central da Parede */}
           <WallVisualContainer
             wall={currentWall}
             selectedRouteId={selectedRoute?.id || null}
@@ -541,20 +595,24 @@ function MainApp() {
         onOpenPostPhoto={(route) => handleOpenPostPhoto(route)}
       />
 
-      <LogAscentModal
-        route={logbookRoute}
-        wall={currentWall}
-        sector={currentSector}
-        visible={!!logbookRoute}
-        onClose={() => setLogbookRoute(null)}
-        onSaveAscent={handleSaveAscent}
-      />
+      {currentWall && currentSector && (
+        <LogAscentModal
+          route={logbookRoute}
+          wall={currentWall}
+          sector={currentSector}
+          visible={!!logbookRoute}
+          onClose={() => setLogbookRoute(null)}
+          onSaveAscent={handleSaveAscent}
+        />
+      )}
 
-      <SectorApproachModal
-        sector={currentSector}
-        visible={showApproachModal}
-        onClose={() => setShowApproachModal(false)}
-      />
+      {currentSector && (
+        <SectorApproachModal
+          sector={currentSector}
+          visible={showApproachModal}
+          onClose={() => setShowApproachModal(false)}
+        />
+      )}
 
       {/* Modal de Seleção Rápida de Cidade / Polo */}
       <SelectCityModal
@@ -587,9 +645,9 @@ function MainApp() {
       <CreateRouteModal
         visible={showCreateRouteModal}
         onClose={() => setShowCreateRouteModal(false)}
-        destinationName={selectedDestination.name}
-        sectorName={currentSector.name}
-        wallName={currentWall?.name}
+        destinationName={selectedDestination?.name || ''}
+        sectorName={currentSector?.name || ''}
+        wallName={currentWall?.name || ''}
         existingRoutesCount={currentWall?.routes?.length || 0}
         onSaveRoute={handleSaveRoute}
       />
@@ -600,7 +658,7 @@ function MainApp() {
         onClose={() => setShowPostPhotoModal(false)}
         currentUser={currentUser || DEFAULT_USER}
         activeRoute={photoTargetRoute || selectedRoute}
-        activeWall={currentWall}
+        activeWall={currentWall || undefined}
         onSavePhoto={handleSavePhoto}
       />
 
