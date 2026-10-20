@@ -113,11 +113,13 @@ CREATE TABLE IF NOT EXISTS public.community_photos (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Habilita Row Level Security (RLS) nas tabelas principais
+-- Habilita Row Level Security (RLS) em todas as tabelas públicas
 ALTER TABLE public.destinations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sectors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.walls ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.routes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ascents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.community_photos ENABLE ROW LEVEL SECURITY;
 
 -- Políticas de leitura pública (qualquer um pode consultar destinos e vias offline/online)
@@ -125,6 +127,8 @@ CREATE POLICY "Leitura pública de destinos" ON public.destinations FOR SELECT U
 CREATE POLICY "Leitura pública de setores" ON public.sectors FOR SELECT USING (true);
 CREATE POLICY "Leitura pública de paredes" ON public.walls FOR SELECT USING (true);
 CREATE POLICY "Leitura pública de vias" ON public.routes FOR SELECT USING (true);
+CREATE POLICY "Leitura pública de perfis" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Leitura pública de ascents" ON public.ascents FOR SELECT USING (true);
 CREATE POLICY "Leitura pública de fotos" ON public.community_photos FOR SELECT USING (true);
 
 -- Políticas de inserção/atualização (permite escaladores colaborarem)
@@ -133,3 +137,6 @@ CREATE POLICY "Inserção pública de destinos" ON public.destinations FOR INSER
 CREATE POLICY "Inserção pública de setores" ON public.sectors FOR INSERT WITH CHECK (true);
 CREATE POLICY "Inserção pública de paredes" ON public.walls FOR INSERT WITH CHECK (true);
 CREATE POLICY "Inserção pública de vias" ON public.routes FOR INSERT WITH CHECK (true);
+CREATE POLICY "Inserção pública de perfis" ON public.profiles FOR INSERT WITH CHECK (true);
+CREATE POLICY "Atualização de perfis" ON public.profiles FOR UPDATE USING (true);
+CREATE POLICY "Inserção pública de ascents" ON public.ascents FOR INSERT WITH CHECK (true);
